@@ -3,6 +3,7 @@ from datetime import date
 from enum import Enum
 
 from packages.domain.evidence.models import Evidence
+from packages.domain.catalog.models import Country, HSCode, Market, Product
 
 
 class EvaluationResult(str, Enum):
@@ -16,10 +17,10 @@ class EvaluationResult(str, Enum):
 @dataclass(frozen=True)
 class ExportScenario:
     id: str
-    product_id: str
-    hs_code: str
-    origin_country_code: str
-    destination_market_code: str
+    product: Product
+    hs_code: HSCode
+    origin_country: Country
+    destination_market: Market
     scenario_date: date
 
 

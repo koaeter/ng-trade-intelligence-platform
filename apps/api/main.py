@@ -7,13 +7,22 @@ from sqlalchemy.orm import Session
 
 from infrastructure.database.repositories import (
     SqlAlchemyApplicabilityEvaluationRepository,
-    SqlAlchemyExportScenarioRepository,
-    SqlAlchemyRequirementRepository,
+    SqlAlchemyCountryRepository,
+    SqlAlchemyDocumentRepository,
     SqlAlchemyEvidenceRepository,
+    SqlAlchemyExportScenarioRepository,
+    SqlAlchemyHSCodeRepository,
+    SqlAlchemyMarketRepository,
+    SqlAlchemyProductRepository,
+    SqlAlchemyProvisionRepository,
+    SqlAlchemyRequirementRepository,
+    SqlAlchemySourceRepository,
 )
 from infrastructure.database.session import get_session
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
+from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
+from packages.domain.source.models import Document, Provision, Source
 
 app = FastAPI(title="NG Trade Intelligence Platform API", version="0.1.0")
 
@@ -26,9 +35,10 @@ class HealthResponse(BaseModel):
 
 class ExportScenarioRequest(BaseModel):
     product_id: str = Field(min_length=1, max_length=64)
+    hs_version_id: str = Field(min_length=1, max_length=64)
     hs_code: str = Field(min_length=1, max_length=32)
     origin_country_code: str = Field(min_length=2, max_length=2)
-    destination_market_code: str = Field(min_length=1, max_length=32)
+    destination_market_code: str = Field(min_length=1, max_length=64)
     scenario_date: date
 
 
@@ -44,6 +54,42 @@ class EvaluationResponse(BaseModel):
     evidence_ids: list[str]
 
 
+class SourceRequest(BaseModel):
+    name: str
+    organization: str
+    source_type: str
+    jurisdiction: str | None = None
+    official_url: str | None = None
+
+
+class DocumentRequest(BaseModel):
+    source_id: str
+    title: str
+    document_type: str
+    publication_date: date | None = None
+    effective_from: date | None = None
+    effective_to: date | None = None
+    version_label: str | None = None
+
+
+class ProvisionRequest(BaseModel):
+    document_id: str
+    locator: str
+    text: str = Field(min_length=1)
+    provision_type: str
+
+
+class EvidenceResponse(BaseModel):
+    id: str
+    evidence_type: str
+    source_id: str
+    locator: str
+    excerpt: str
+    verified: bool
+    document_id: str | None
+    provision_id: str | None
+
+
 @app.get("/health", response_model=HealthResponse, tags=["system"])
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="ng-trade-intelligence-api", version="0.1.0")
@@ -51,10 +97,16 @@ def health() -> HealthResponse:
 
 @app.post("/api/v1/export-scenarios", response_model=ExportScenarioResponse, status_code=201, tags=["scenarios"])
 def create_export_scenario(payload: ExportScenarioRequest, session: Session = Depends(get_session)) -> ExportScenarioResponse:
-    scenario = ExportScenario(str(uuid4()), payload.product_id, payload.hs_code, payload.origin_country_code.upper(), payload.destination_market_code, payload.scenario_date)
+    product = SqlAlchemyProductRepository(session).get(payload.product_id)
+    hs_code = SqlAlchemyHSCodeRepository(session).get(payload.hs_version_id, payload.hs_code)
+    origin = SqlAlchemyCountryRepository(session).get(payload.origin_country_code)
+    market = SqlAlchemyMarketRepository(session).get(payload.destination_market_code)
+    if None in (product, hs_code, origin, market):
+        raise HTTPException(status_code=400, detail="Unknown product, HS code/version, origin country, or destination market")
+    scenario = ExportScenario(str(uuid4()), product, hs_code, origin, market, payload.scenario_date)
     create_scenario(SqlAlchemyExportScenarioRepository(session), scenario)
     session.commit()
-    return ExportScenarioResponse(**payload.model_dump(), id=scenario.id, origin_country_code=scenario.origin_country_code)
+    return ExportScenarioResponse(**payload.model_dump(), id=scenario.id, origin_country_code=origin.code)
 
 
 @app.get("/api/v1/export-scenarios/{scenario_id}", response_model=ExportScenarioResponse, tags=["scenarios"])
@@ -62,7 +114,7 @@ def get_export_scenario(scenario_id: str, session: Session = Depends(get_session
     scenario = get_scenario(SqlAlchemyExportScenarioRepository(session), scenario_id)
     if scenario is None:
         raise HTTPException(status_code=404, detail="Export scenario not found")
-    return ExportScenarioResponse(id=scenario.id, product_id=scenario.product_id, hs_code=scenario.hs_code, origin_country_code=scenario.origin_country_code, destination_market_code=scenario.destination_market_code, scenario_date=scenario.scenario_date)
+    return ExportScenarioResponse(id=scenario.id, product_id=scenario.product.id, hs_version_id=scenario.hs_code.version_id, hs_code=scenario.hs_code.code, origin_country_code=scenario.origin_country.code, destination_market_code=scenario.destination_market.code, scenario_date=scenario.scenario_date)
 
 
 @app.post("/api/v1/export-scenarios/{scenario_id}/evaluate", response_model=list[EvaluationResponse], tags=["scenarios"])
@@ -80,4 +132,60 @@ def get_export_scenario_results(scenario_id: str, session: Session = Depends(get
     if get_scenario(SqlAlchemyExportScenarioRepository(session), scenario_id) is None:
         raise HTTPException(status_code=404, detail="Export scenario not found")
     evaluations = SqlAlchemyApplicabilityEvaluationRepository(session).list_for_scenario(scenario_id)
-    return [EvaluationResponse(scenario_id=x.scenario_id, result=x.result.value, rule_set_version=x.rule_set_version) for x in evaluations]
+    return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
+
+
+@app.post("/api/v1/sources", status_code=201, tags=["sources"])
+def create_source(payload: SourceRequest, session: Session = Depends(get_session)):
+    source = Source(str(uuid4()), **payload.model_dump())
+    SqlAlchemySourceRepository(session).add(source)
+    session.commit()
+    return source
+
+
+@app.get("/api/v1/sources/{source_id}", tags=["sources"])
+def get_source(source_id: str, session: Session = Depends(get_session)):
+    source = SqlAlchemySourceRepository(session).get(source_id)
+    if source is None: raise HTTPException(status_code=404, detail="Source not found")
+    return source
+
+
+@app.post("/api/v1/documents", status_code=201, tags=["sources"])
+def create_document(payload: DocumentRequest, session: Session = Depends(get_session)):
+    if SqlAlchemySourceRepository(session).get(payload.source_id) is None:
+        raise HTTPException(status_code=400, detail="Source not found")
+    document = Document(str(uuid4()), **payload.model_dump())
+    SqlAlchemyDocumentRepository(session).add(document)
+    session.commit()
+    return document
+
+
+@app.get("/api/v1/documents/{document_id}", tags=["sources"])
+def get_document(document_id: str, session: Session = Depends(get_session)):
+    document = SqlAlchemyDocumentRepository(session).get(document_id)
+    if document is None: raise HTTPException(status_code=404, detail="Document not found")
+    return document
+
+
+@app.post("/api/v1/provisions", status_code=201, tags=["sources"])
+def create_provision(payload: ProvisionRequest, session: Session = Depends(get_session)):
+    if SqlAlchemyDocumentRepository(session).get(payload.document_id) is None:
+        raise HTTPException(status_code=400, detail="Document not found")
+    provision = Provision(str(uuid4()), **payload.model_dump())
+    SqlAlchemyProvisionRepository(session).add(provision)
+    session.commit()
+    return provision
+
+
+@app.get("/api/v1/provisions/{provision_id}", tags=["sources"])
+def get_provision(provision_id: str, session: Session = Depends(get_session)):
+    provision = SqlAlchemyProvisionRepository(session).get(provision_id)
+    if provision is None: raise HTTPException(status_code=404, detail="Provision not found")
+    return provision
+
+
+@app.get("/api/v1/evidence/{evidence_id}", response_model=EvidenceResponse, tags=["evidence"])
+def get_evidence(evidence_id: str, session: Session = Depends(get_session)) -> EvidenceResponse:
+    evidence = SqlAlchemyEvidenceRepository(session).get(evidence_id)
+    if evidence is None: raise HTTPException(status_code=404, detail="Evidence not found")
+    return EvidenceResponse(id=evidence.id, evidence_type=evidence.evidence_type, source_id=evidence.source_id, locator=evidence.locator, excerpt=evidence.excerpt, verified=evidence.verified, document_id=evidence.document_id, provision_id=evidence.provision_id)

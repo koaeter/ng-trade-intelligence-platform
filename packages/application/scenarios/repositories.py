@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, ExportScenario
 
@@ -25,6 +26,16 @@ class RequirementRepository(ABC):
 
     @abstractmethod
     def list_all(self) -> list[Requirement]:
+        raise NotImplementedError
+
+
+class EvidenceRepository(ABC):
+    @abstractmethod
+    def add(self, evidence: Evidence) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get(self, evidence_id: str) -> Evidence | None:
         raise NotImplementedError
 
 

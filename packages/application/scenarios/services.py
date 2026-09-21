@@ -57,8 +57,8 @@ def evaluate_scenario(
     scenario_repository: ExportScenarioRepository,
     requirement_repository: RequirementRepository,
     evaluation_repository: ApplicabilityEvaluationRepository,
-    evidence_repository: EvidenceRepository,
     scenario_id: str,
+    evidence_repository: EvidenceRepository | None = None,
 ) -> list[ApplicabilityEvaluation]:
     scenario = scenario_repository.get(scenario_id)
     if scenario is None:

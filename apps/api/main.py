@@ -9,6 +9,7 @@ from infrastructure.database.repositories import (
     SqlAlchemyApplicabilityEvaluationRepository,
     SqlAlchemyExportScenarioRepository,
     SqlAlchemyRequirementRepository,
+    SqlAlchemyEvidenceRepository,
 )
 from infrastructure.database.session import get_session
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
@@ -37,8 +38,10 @@ class ExportScenarioResponse(ExportScenarioRequest):
 
 class EvaluationResponse(BaseModel):
     scenario_id: str
+    requirement_id: str
     result: str
     rule_set_version: str
+    evidence_ids: list[str]
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
@@ -65,11 +68,11 @@ def get_export_scenario(scenario_id: str, session: Session = Depends(get_session
 @app.post("/api/v1/export-scenarios/{scenario_id}/evaluate", response_model=list[EvaluationResponse], tags=["scenarios"])
 def evaluate_export_scenario(scenario_id: str, session: Session = Depends(get_session)) -> list[EvaluationResponse]:
     try:
-        evaluations = evaluate_scenario(SqlAlchemyExportScenarioRepository(session), SqlAlchemyRequirementRepository(session), SqlAlchemyApplicabilityEvaluationRepository(session), scenario_id)
+        evaluations = evaluate_scenario(SqlAlchemyExportScenarioRepository(session), SqlAlchemyRequirementRepository(session), SqlAlchemyApplicabilityEvaluationRepository(session), scenario_id, SqlAlchemyEvidenceRepository(session))
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     session.commit()
-    return [EvaluationResponse(scenario_id=x.scenario_id, result=x.result.value, rule_set_version=x.rule_set_version) for x in evaluations]
+    return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
 
 
 @app.get("/api/v1/export-scenarios/{scenario_id}/results", response_model=list[EvaluationResponse], tags=["scenarios"])

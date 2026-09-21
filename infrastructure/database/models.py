@@ -1,17 +1,20 @@
 from datetime import date
-from sqlalchemy import Boolean, Date, ForeignKey, String
+from sqlalchemy import Boolean, Date, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
+
 
 class ProductModel(Base):
     __tablename__ = "products"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
+
 class HSVersionModel(Base):
     __tablename__ = "hs_versions"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
+
 
 class HSCodeModel(Base):
     __tablename__ = "hs_codes"
@@ -19,10 +22,12 @@ class HSCodeModel(Base):
     code: Mapped[str] = mapped_column(String(32), primary_key=True)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
 
+
 class CountryModel(Base):
     __tablename__ = "countries"
     code: Mapped[str] = mapped_column(String(2), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+
 
 class MarketModel(Base):
     __tablename__ = "markets"
@@ -30,15 +35,17 @@ class MarketModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     country_code: Mapped[str | None] = mapped_column(String(2), ForeignKey("countries.code"))
 
+
 class ExportScenarioModel(Base):
     __tablename__ = "export_scenarios"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     product_id: Mapped[str] = mapped_column(String(64), ForeignKey("products.id"), nullable=False)
-    hs_version_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    hs_version_id: Mapped[str] = mapped_column(String(64), ForeignKey("hs_versions.id"), nullable=False)
     hs_code: Mapped[str] = mapped_column(String(32), nullable=False)
     origin_country_code: Mapped[str] = mapped_column(String(2), ForeignKey("countries.code"), nullable=False)
     destination_market_code: Mapped[str] = mapped_column(String(64), ForeignKey("markets.code"), nullable=False)
     scenario_date: Mapped[date] = mapped_column(Date, nullable=False)
+
 
 class RequirementModel(Base):
     __tablename__ = "requirements"
@@ -47,10 +54,12 @@ class RequirementModel(Base):
     effective_from: Mapped[date] = mapped_column(Date, nullable=False)
     effective_to: Mapped[date | None] = mapped_column(Date)
 
+
 class RequirementProductModel(Base):
     __tablename__ = "requirement_products"
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
     product_id: Mapped[str] = mapped_column(String(64), ForeignKey("products.id"), primary_key=True)
+
 
 class RequirementHSCodeModel(Base):
     __tablename__ = "requirement_hs_codes"
@@ -58,29 +67,67 @@ class RequirementHSCodeModel(Base):
     hs_version_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     hs_code: Mapped[str] = mapped_column(String(32), primary_key=True)
 
+
 class RequirementOriginCountryModel(Base):
     __tablename__ = "requirement_origin_countries"
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
     country_code: Mapped[str] = mapped_column(String(2), ForeignKey("countries.code"), primary_key=True)
+
 
 class RequirementDestinationMarketModel(Base):
     __tablename__ = "requirement_destination_markets"
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
     market_code: Mapped[str] = mapped_column(String(64), ForeignKey("markets.code"), primary_key=True)
 
+
 class RequirementEvidenceModel(Base):
     __tablename__ = "requirement_evidence"
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
     evidence_id: Mapped[str] = mapped_column(String(64), ForeignKey("evidence.id"), primary_key=True)
 
+
+class SourceModel(Base):
+    __tablename__ = "sources"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    organization: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    jurisdiction: Mapped[str | None] = mapped_column(String(128))
+    official_url: Mapped[str | None] = mapped_column(String(1000))
+
+
+class DocumentModel(Base):
+    __tablename__ = "documents"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    document_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    publication_date: Mapped[date | None] = mapped_column(Date)
+    effective_from: Mapped[date | None] = mapped_column(Date)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    version_label: Mapped[str | None] = mapped_column(String(128))
+
+
+class ProvisionModel(Base):
+    __tablename__ = "provisions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    locator: Mapped[str] = mapped_column(String(500), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    provision_type: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
 class EvidenceModel(Base):
     __tablename__ = "evidence"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     evidence_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False)
     locator: Mapped[str] = mapped_column(String(500), nullable=False)
     excerpt: Mapped[str] = mapped_column(String(4000), nullable=False)
     verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    document_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("documents.id"))
+    provision_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("provisions.id"))
+
 
 class ApplicabilityEvaluationModel(Base):
     __tablename__ = "applicability_evaluations"

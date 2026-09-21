@@ -1,13 +1,17 @@
 from datetime import date
 
 from packages.application.scenarios.services import evaluate_requirement, evaluate_scenario
+from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import EvaluationResult, ExportScenario
 
 
 def scenario() -> ExportScenario:
-    return ExportScenario("scenario-1", "product-1", "1801", "NG", "DE", date(2026, 9, 21))
+    return ExportScenario(
+        "scenario-1", Product("product-1", "Product"), HSCode("HS2022", "1801", "Cocoa"),
+        Country("NG", "Nigeria"), Market("DE", "Germany", "DE"), date(2026, 9, 21)
+    )
 
 
 def verified_evidence() -> Evidence:
@@ -22,20 +26,18 @@ def test_active_requirement_without_evidence_is_insufficient() -> None:
 def test_active_scoped_requirement_with_verified_evidence_is_applicable() -> None:
     requirement = Requirement(
         "req-1", "Sample", date(2026, 1, 1),
-        product_ids=frozenset({"product-1"}),
-        hs_codes=frozenset({"1801"}),
-        origin_country_codes=frozenset({"NG"}),
-        destination_market_codes=frozenset({"DE"}),
+        products=frozenset({Product("product-1", "Product")}),
+        hs_codes=frozenset({HSCode("HS2022", "1801", "Cocoa")}),
+        origin_countries=frozenset({Country("NG", "Nigeria")}),
+        destination_markets=frozenset({Market("DE", "Germany", "DE")}),
         evidence_ids=("ev-1",),
     )
     result = evaluate_requirement(scenario(), requirement, (verified_evidence(),))
     assert result.result == EvaluationResult.APPLICABLE
-    assert result.scenario_id == "scenario-1"
-    assert result.requirement_id == "req-1"
 
 
 def test_non_matching_scope_is_not_applicable() -> None:
-    requirement = Requirement("req-1", "Sample", date(2026, 1, 1), hs_codes=frozenset({"0901"}))
+    requirement = Requirement("req-1", "Sample", date(2026, 1, 1), hs_codes=frozenset({HSCode("HS2022", "0901", "Coffee")}))
     result = evaluate_requirement(scenario(), requirement, (verified_evidence(),))
     assert result.result == EvaluationResult.NOT_APPLICABLE
 

@@ -11,7 +11,7 @@ def test_create_export_scenario_validation() -> None:
 def test_scenario_date_is_required() -> None:
     client = TestClient(app)
     response = client.post("/api/v1/export-scenarios", json={
-        "product_id": "p", "hs_code": "1801", "origin_country_code": "NG",
+        "product_id": "p", "hs_version_id": "HS2022", "hs_code": "1801", "origin_country_code": "NG",
         "destination_market_code": "DE",
     })
     assert response.status_code == 422

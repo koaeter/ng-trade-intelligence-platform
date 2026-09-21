@@ -1,7 +1,15 @@
 from datetime import date
-from sqlalchemy import Date, String
+from sqlalchemy import Boolean, Date, ForeignKey, String, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
+
+
+evaluation_evidence = Table(
+    "evaluation_evidence",
+    Base.metadata,
+    Column("evaluation_id", String(64), ForeignKey("applicability_evaluations.id"), primary_key=True),
+    Column("evidence_id", String(64), ForeignKey("evidence.id"), primary_key=True),
+)
 
 
 class ExportScenarioModel(Base):
@@ -20,11 +28,27 @@ class RequirementModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     effective_from: Mapped[date] = mapped_column(Date, nullable=False)
     effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    product_ids: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    hs_codes: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    origin_country_codes: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
+    destination_market_codes: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    evidence_ids: Mapped[str] = mapped_column(String(4000), nullable=False, default="")
+
+
+class EvidenceModel(Base):
+    __tablename__ = "evidence"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    evidence_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    locator: Mapped[str] = mapped_column(String(500), nullable=False)
+    excerpt: Mapped[str] = mapped_column(String(4000), nullable=False)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class ApplicabilityEvaluationModel(Base):
     __tablename__ = "applicability_evaluations"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     scenario_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    requirement_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     result: Mapped[str] = mapped_column(String(32), nullable=False)
     rule_set_version: Mapped[str] = mapped_column(String(64), nullable=False)

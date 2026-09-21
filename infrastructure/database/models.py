@@ -52,3 +52,35 @@ class ApplicabilityEvaluationModel(Base):
     requirement_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     result: Mapped[str] = mapped_column(String(32), nullable=False)
     rule_set_version: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class ProductModel(Base):
+    __tablename__ = "products"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class HSVersionModel(Base):
+    __tablename__ = "hs_versions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class HSCodeModel(Base):
+    __tablename__ = "hs_codes"
+    version_id: Mapped[str] = mapped_column(String(64), ForeignKey("hs_versions.id"), primary_key=True)
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+
+
+class CountryModel(Base):
+    __tablename__ = "countries"
+    code: Mapped[str] = mapped_column(String(2), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class MarketModel(Base):
+    __tablename__ = "markets"
+    code: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    country_code: Mapped[str | None] = mapped_column(String(2), ForeignKey("countries.code"), nullable=True)

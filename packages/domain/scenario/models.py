@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 
+from packages.domain.evidence.models import Evidence
+
 
 class EvaluationResult(str, Enum):
     APPLICABLE = "APPLICABLE"
@@ -24,5 +26,7 @@ class ExportScenario:
 @dataclass(frozen=True)
 class ApplicabilityEvaluation:
     scenario_id: str
+    requirement_id: str
     result: EvaluationResult
     rule_set_version: str
+    evidence: tuple[Evidence, ...] = ()

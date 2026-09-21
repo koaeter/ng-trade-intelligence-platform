@@ -1,13 +1,7 @@
 from datetime import date
-from sqlalchemy import Boolean, Date, ForeignKey, String, Table, Column
+from sqlalchemy import Boolean, Date, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
-
-evaluation_evidence = Table(
-    "evaluation_evidence", Base.metadata,
-    Column("evaluation_id", String(64), ForeignKey("applicability_evaluations.id"), primary_key=True),
-    Column("evidence_id", String(64), ForeignKey("evidence.id"), primary_key=True),
-)
 
 class ProductModel(Base):
     __tablename__ = "products"

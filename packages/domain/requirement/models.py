@@ -12,6 +12,7 @@ class Requirement:
     hs_codes: frozenset[str] = frozenset()
     origin_country_codes: frozenset[str] = frozenset()
     destination_market_codes: frozenset[str] = frozenset()
+    evidence_ids: tuple[str, ...] = ()
 
     def is_effective_on(self, when: date) -> bool:
         return self.effective_from <= when and (

@@ -7,43 +7,29 @@ from packages.domain.scenario.models import ApplicabilityEvaluation, ExportScena
 
 class ExportScenarioRepository(ABC):
     @abstractmethod
-    def add(self, scenario: ExportScenario) -> None:
-        raise NotImplementedError
-
+    def add(self, scenario: ExportScenario) -> None: raise NotImplementedError
     @abstractmethod
-    def get(self, scenario_id: str) -> ExportScenario | None:
-        raise NotImplementedError
+    def get(self, scenario_id: str) -> ExportScenario | None: raise NotImplementedError
 
 
 class RequirementRepository(ABC):
     @abstractmethod
-    def add(self, requirement: Requirement) -> None:
-        raise NotImplementedError
-
+    def add(self, requirement: Requirement) -> None: raise NotImplementedError
     @abstractmethod
-    def get(self, requirement_id: str) -> Requirement | None:
-        raise NotImplementedError
-
+    def get(self, requirement_id: str) -> Requirement | None: raise NotImplementedError
     @abstractmethod
-    def list_all(self) -> list[Requirement]:
-        raise NotImplementedError
+    def list_all(self) -> list[Requirement]: raise NotImplementedError
 
 
 class EvidenceRepository(ABC):
     @abstractmethod
-    def add(self, evidence: Evidence) -> None:
-        raise NotImplementedError
-
+    def add(self, evidence: Evidence) -> None: raise NotImplementedError
     @abstractmethod
-    def get(self, evidence_id: str) -> Evidence | None:
-        raise NotImplementedError
+    def get(self, evidence_id: str) -> Evidence | None: raise NotImplementedError
 
 
 class ApplicabilityEvaluationRepository(ABC):
     @abstractmethod
-    def add(self, evaluation: ApplicabilityEvaluation) -> None:
-        raise NotImplementedError
-
+    def add(self, evaluation: ApplicabilityEvaluation) -> None: raise NotImplementedError
     @abstractmethod
-    def list_for_scenario(self, scenario_id: str) -> list[ApplicabilityEvaluation]:
-        raise NotImplementedError
+    def list_for_scenario(self, scenario_id: str) -> list[ApplicabilityEvaluation]: raise NotImplementedError

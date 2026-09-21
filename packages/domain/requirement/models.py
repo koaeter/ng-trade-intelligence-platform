@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+from packages.domain.catalog.models import Country, HSCode, Market, Product
 from datetime import date
 
 
@@ -8,10 +10,10 @@ class Requirement:
     name: str
     effective_from: date
     effective_to: date | None = None
-    product_ids: frozenset[str] = frozenset()
-    hs_codes: frozenset[str] = frozenset()
-    origin_country_codes: frozenset[str] = frozenset()
-    destination_market_codes: frozenset[str] = frozenset()
+    products: frozenset[Product] = frozenset()
+    hs_codes: frozenset[HSCode] = frozenset()
+    origin_countries: frozenset[Country] = frozenset()
+    destination_markets: frozenset[Market] = frozenset()
     evidence_ids: tuple[str, ...] = ()
 
     def is_effective_on(self, when: date) -> bool:
@@ -19,12 +21,12 @@ class Requirement:
             self.effective_to is None or when <= self.effective_to
         )
 
-    def scope_matches(self, product_id: str, hs_code: str, origin_country_code: str, destination_market_code: str) -> bool | None:
+    def scope_matches(self, product: Product, hs_code: HSCode, origin_country: Country, destination_market: Market) -> bool | None:
         checks = [
-            (self.product_ids, product_id),
+            (self.products, product),
             (self.hs_codes, hs_code),
-            (self.origin_country_codes, origin_country_code.upper()),
-            (self.destination_market_codes, destination_market_code),
+            (self.origin_countries, origin_country),
+            (self.destination_markets, destination_market),
         ]
         if not any(values for values, _ in checks):
             return None

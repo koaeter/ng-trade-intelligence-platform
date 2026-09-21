@@ -22,6 +22,44 @@ def _join(values: frozenset[str] | tuple[str, ...]) -> str:
     return ",".join(sorted(values))
 
 
+
+
+class SqlAlchemyProductRepository(ProductRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get(self, product_id: str) -> Product | None:
+        row = self._session.get(ProductModel, product_id)
+        return None if row is None else Product(row.id, row.name)
+
+
+class SqlAlchemyHSCodeRepository(HSCodeRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get(self, version_id: str, code: str) -> HSCode | None:
+        row = self._session.get(HSCodeModel, (version_id, code))
+        return None if row is None else HSCode(row.version_id, row.code, row.description)
+
+
+class SqlAlchemyCountryRepository(CountryRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get(self, code: str) -> Country | None:
+        row = self._session.get(CountryModel, code.upper())
+        return None if row is None else Country(row.code, row.name)
+
+
+class SqlAlchemyMarketRepository(MarketRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get(self, code: str) -> Market | None:
+        row = self._session.get(MarketModel, code)
+        return None if row is None else Market(row.code, row.name, row.country_code)
+
+
 class SqlAlchemyExportScenarioRepository(ExportScenarioRepository):
     def __init__(self, session: Session) -> None:
         self._session = session

@@ -30,10 +30,10 @@ def evaluate_requirement(
         result = EvaluationResult.NOT_APPLICABLE
     else:
         scope = requirement.scope_matches(
-            scenario.product_id,
+            scenario.product,
             scenario.hs_code,
-            scenario.origin_country_code,
-            scenario.destination_market_code,
+            scenario.origin_country,
+            scenario.destination_market,
         )
         if scope is False:
             result = EvaluationResult.NOT_APPLICABLE

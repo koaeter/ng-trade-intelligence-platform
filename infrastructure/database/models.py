@@ -1,5 +1,5 @@
-from datetime import date
-from sqlalchemy import Boolean, Date, ForeignKey, String, Text
+from datetime import date, datetime
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
 
@@ -128,6 +128,30 @@ class EvidenceModel(Base):
     verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     document_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("documents.id"))
     provision_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("provisions.id"))
+
+
+class SourceArtifactModel(Base):
+    __tablename__ = "source_artifacts"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False, index=True)
+    document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(1000), nullable=False)
+    checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    acquired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    mime_type: Mapped[str | None] = mapped_column(String(255))
+    original_filename: Mapped[str | None] = mapped_column(String(500))
+    processing_state: Mapped[str] = mapped_column(String(32), nullable=False, default="ACQUIRED")
+
+
+class ExtractedTextModel(Base):
+    __tablename__ = "extracted_texts"
+    artifact_id: Mapped[str] = mapped_column(String(64), ForeignKey("source_artifacts.id", ondelete="CASCADE"), primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    extractor: Mapped[str] = mapped_column(String(128), nullable=False)
+    extractor_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    extracted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ocr_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class ApplicabilityEvaluationModel(Base):

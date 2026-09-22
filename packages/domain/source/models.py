@@ -1,5 +1,18 @@
 from dataclasses import dataclass
 from datetime import date
+from enum import Enum
+
+
+class SourceStatus(str, Enum):
+    DISCOVERED = "DISCOVERED"
+    ACQUIRED = "ACQUIRED"
+    EXTRACTED = "EXTRACTED"
+    CANDIDATE = "CANDIDATE"
+    REVIEWED = "REVIEWED"
+    PUBLISHED = "PUBLISHED"
+    SUPERSEDED = "SUPERSEDED"
+    RETIRED = "RETIRED"
+
 
 @dataclass(frozen=True)
 class Source:
@@ -9,6 +22,8 @@ class Source:
     source_type: str
     jurisdiction: str | None = None
     official_url: str | None = None
+    status: SourceStatus = SourceStatus.DISCOVERED
+
 
 @dataclass(frozen=True)
 class Document:
@@ -20,6 +35,7 @@ class Document:
     effective_from: date | None = None
     effective_to: date | None = None
     version_label: str | None = None
+
 
 @dataclass(frozen=True)
 class Provision:

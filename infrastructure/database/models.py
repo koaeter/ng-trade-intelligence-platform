@@ -94,6 +94,7 @@ class SourceModel(Base):
     source_type: Mapped[str] = mapped_column(String(64), nullable=False)
     jurisdiction: Mapped[str | None] = mapped_column(String(128))
     official_url: Mapped[str | None] = mapped_column(String(1000))
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="DISCOVERED")
 
 
 class DocumentModel(Base):

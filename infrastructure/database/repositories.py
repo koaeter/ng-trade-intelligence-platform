@@ -15,7 +15,7 @@ from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
-from packages.domain.source.models import Document, Provision, Source
+from packages.domain.source.models import Document, Provision, Source, SourceStatus
 
 
 class SqlAlchemyProductRepository(ProductRepository):
@@ -116,11 +116,11 @@ class SqlAlchemyApplicabilityEvaluationRepository(ApplicabilityEvaluationReposit
 class SqlAlchemySourceRepository(SourceRepository):
     def __init__(self, session: Session) -> None: self._session = session
     def add(self, source: Source) -> None:
-        self._session.add(SourceModel(id=source.id, name=source.name, organization=source.organization, source_type=source.source_type, jurisdiction=source.jurisdiction, official_url=source.official_url))
+        self._session.add(SourceModel(id=source.id, name=source.name, organization=source.organization, source_type=source.source_type, jurisdiction=source.jurisdiction, official_url=source.official_url, status=source.status.value))
         self._session.flush()
     def get(self, source_id: str) -> Source | None:
         row = self._session.get(SourceModel, source_id)
-        return None if row is None else Source(row.id, row.name, row.organization, row.source_type, row.jurisdiction, row.official_url)
+        return None if row is None else Source(row.id, row.name, row.organization, row.source_type, row.jurisdiction, row.official_url, SourceStatus(row.status))
 
 
 class SqlAlchemyDocumentRepository(DocumentRepository):

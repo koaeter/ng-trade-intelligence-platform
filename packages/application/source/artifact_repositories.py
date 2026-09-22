@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from packages.domain.source.artifacts import ExtractedText, SourceArtifact
+
+
+class SourceArtifactRepository(Protocol):
+    def add(self, artifact: SourceArtifact) -> None: ...
+    def get(self, artifact_id: str) -> SourceArtifact | None: ...
+
+
+class ExtractedTextRepository(Protocol):
+    def add(self, text: ExtractedText) -> None: ...
+    def get(self, artifact_id: str) -> ExtractedText | None: ...

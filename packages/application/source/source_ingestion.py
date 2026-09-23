@@ -41,7 +41,6 @@ class SourceIngestionService:
             mime_type=mime,
             acquisition_event_id=acquisition_event_id,
         )
-        self.artifacts.add(artifact)
         if acquisition_event_id and self.acquisition_events is not None:
             event = self.acquisition_events.get(acquisition_event_id)
             if event is None:
@@ -53,6 +52,8 @@ class SourceIngestionService:
                 raise ValueError("Only successful acquisition events can be linked to artifacts")
             if event.response_sha256 != artifact.checksum_sha256:
                 raise ValueError("Acquisition response checksum does not match persisted artifact")
+        self.artifacts.add(artifact)
+        if acquisition_event_id and self.acquisition_events is not None:
             self.acquisition_events.link_artifact(acquisition_event_id, artifact_id)
         source = self.sources.get(source_id)
         if source is not None:

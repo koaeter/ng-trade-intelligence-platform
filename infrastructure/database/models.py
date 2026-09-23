@@ -161,3 +161,16 @@ class ApplicabilityEvaluationModel(Base):
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), nullable=False, index=True)
     result: Mapped[str] = mapped_column(String(32), nullable=False)
     rule_set_version: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class ExtractionSegmentModel(Base):
+    __tablename__ = "extraction_segments"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    artifact_id: Mapped[str] = mapped_column(String(64), ForeignKey("source_artifacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    page_number: Mapped[int | None] = mapped_column(nullable=True, index=True)
+    section: Mapped[str | None] = mapped_column(String(1000))
+    source_start: Mapped[int | None] = mapped_column(nullable=True)
+    source_end: Mapped[int | None] = mapped_column(nullable=True)
+    locator: Mapped[str | None] = mapped_column(String(1000))

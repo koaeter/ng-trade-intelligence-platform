@@ -111,6 +111,9 @@ class AuthorityEndpointResponse(BaseModel):
     content_format: str
     purpose: str | None
     active: bool
+    verification_status: str
+    last_verified_at: str | None
+    verification_note: str | None
 
 
 class EvidenceResponse(BaseModel):
@@ -182,6 +185,9 @@ def list_authority_endpoints(authority_id: str, session: Session = Depends(get_s
             content_format=x.content_format,
             purpose=x.purpose,
             active=x.active,
+            verification_status=x.verification_status.value,
+            last_verified_at=x.last_verified_at.isoformat() if x.last_verified_at else None,
+            verification_note=x.verification_note,
         )
         for x in endpoints
     ]

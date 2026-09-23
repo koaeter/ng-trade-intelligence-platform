@@ -7,7 +7,7 @@ INITIAL_NIGERIAN_AUTHORITIES = (
     Authority("son", "Standards Organisation of Nigeria", "SON", "ng", "STANDARDS", "https://son.gov.ng/"),
     Authority("nafdac", "National Agency for Food and Drug Administration and Control", "NAFDAC", "ng", "PRODUCT_REGULATION", "https://nafdac.gov.ng/"),
     Authority("naqs", "Nigeria Agricultural Quarantine Service", "NAQS", "ng", "PHYTOSANITARY", "https://naqs.gov.ng/"),
-    Authority("dvpсs", "Department of Veterinary and Pest Control Services", "DVPCS", "ng", "VETERINARY", None),
+    Authority("dvcps", "Department of Veterinary and Pest Control Services", "DVPCS", "ng", "VETERINARY", None),
     Authority("fisheries", "Department of Fisheries", None, "ng", "FISHERIES", None),
     Authority("ninas", "Nigeria National Accreditation Service", "NiNAS", "ng", "ACCREDITATION", "https://ninas.ng/"),
 )

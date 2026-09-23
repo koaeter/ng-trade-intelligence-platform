@@ -164,11 +164,74 @@ class SqlAlchemyProvisionRepository(ProvisionRepository):
         return None if row is None else Provision(row.id, row.document_id, row.locator, row.text, row.provision_type)
 
 
+class SqlAlchemyAcquisitionEventRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, event) -> None:
+        self._session.add(AcquisitionEventModel(
+            id=event.id,
+            source_id=event.source_id,
+            endpoint_id=event.endpoint_id,
+            requested_url=event.requested_url,
+            retrieved_url=event.retrieved_url,
+            started_at=event.started_at,
+            completed_at=event.completed_at,
+            status=event.status.value,
+            http_status=event.http_status,
+            content_type=event.content_type,
+            content_length=event.content_length,
+            response_sha256=event.response_sha256,
+            user_agent=event.user_agent,
+            error_code=event.error_code,
+            error_message=event.error_message,
+            artifact_id=event.artifact_id,
+        ))
+        self._session.flush()
+
+    def get(self, event_id: str):
+        from packages.domain.source.acquisition import AcquisitionEvent, AcquisitionEventStatus
+        row = self._session.get(AcquisitionEventModel, event_id)
+        if row is None:
+            return None
+        return AcquisitionEvent(
+            row.id, row.source_id, row.endpoint_id, row.requested_url, row.retrieved_url,
+            row.started_at, row.completed_at, AcquisitionEventStatus(row.status),
+            row.http_status, row.content_type, row.content_length, row.response_sha256,
+            row.user_agent, row.error_code, row.error_message, row.artifact_id,
+        )
+
+    def link_artifact(self, event_id: str, artifact_id: str) -> None:
+        row = self._session.get(AcquisitionEventModel, event_id)
+        if row is None:
+            raise ValueError("Acquisition event does not exist")
+        row.artifact_id = artifact_id
+        self._session.flush()
+
+    def list_for_source(self, source_id: str):
+        from packages.domain.source.acquisition import AcquisitionEvent, AcquisitionEventStatus
+        rows = self._session.scalars(
+            select(AcquisitionEventModel)
+            .where(AcquisitionEventModel.source_id == source_id)
+            .order_by(AcquisitionEventModel.started_at.desc(), AcquisitionEventModel.id.desc())
+        ).all()
+        return [
+            AcquisitionEvent(
+                row.id, row.source_id, row.endpoint_id, row.requested_url, row.retrieved_url,
+                row.started_at, row.completed_at, AcquisitionEventStatus(row.status),
+                row.http_status, row.content_type, row.content_length, row.response_sha256,
+                row.user_agent, row.error_code, row.error_message, row.artifact_id,
+            )
+            for row in rows
+        ]
+
+
 class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
     def __init__(self, session: Session) -> None: self._session = session
     def add(self, artifact: SourceArtifact) -> None:
         self._session.add(SourceArtifactModel(
             id=artifact.id, source_id=artifact.source_id, document_id=artifact.document_id,
+            acquisition_event_id=artifact.acquisition_event_id,
             kind=artifact.kind.value, storage_key=artifact.storage_key,
             checksum_sha256=artifact.checksum_sha256, acquired_at=artifact.acquired_at,
             mime_type=artifact.mime_type, original_filename=artifact.original_filename,
@@ -182,6 +245,7 @@ class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
             row.id, row.source_id, row.document_id, ArtifactKind(row.kind),
             row.storage_key, row.checksum_sha256, row.acquired_at,
             row.mime_type, row.original_filename, ArtifactProcessingState(row.processing_state),
+            row.acquisition_event_id,
         )
 
 

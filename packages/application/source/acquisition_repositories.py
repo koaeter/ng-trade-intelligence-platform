@@ -15,3 +15,7 @@ class AcquisitionEventRepository(ABC):
     @abstractmethod
     def link_artifact(self, event_id: str, artifact_id: str) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def list_for_source(self, source_id: str) -> list[AcquisitionEvent]:
+        raise NotImplementedError

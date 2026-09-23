@@ -21,6 +21,7 @@ from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationR
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
 from packages.domain.source.extraction import ExtractionSegment
 from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
+
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
 
 
@@ -257,3 +258,33 @@ class SqlAlchemyProvisionCandidateRepository:
             )
             for row in rows
         ]
+
+    def set_status(self, candidate_id: str, status: ProvisionCandidateStatus) -> None:
+        row = self._session.get(ProvisionCandidateModel, candidate_id)
+        if row is None:
+            raise ValueError("Provision candidate does not exist")
+        row.status = status.value
+        self._session.flush()
+
+ 
+class SqlAlchemyProvisionCandidateReviewRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(
+        self,
+        candidate_id: str,
+        reviewer_reference: str,
+        decision: ProvisionCandidateStatus,
+        reason: str | None,
+        reviewed_at,
+    ) -> None:
+        self._session.add(ProvisionCandidateReviewModel(
+            id=str(uuid4()),
+            candidate_id=candidate_id,
+            reviewer_reference=reviewer_reference,
+            decision=decision.value,
+            reason=reason,
+            reviewed_at=reviewed_at,
+        ))
+        self._session.flush()

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from packages.domain.source.provision_candidates import ProvisionCandidate
+from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 
 
 class ProvisionCandidateRepository(Protocol):
@@ -9,3 +9,5 @@ class ProvisionCandidateRepository(Protocol):
     def get(self, candidate_id: str) -> ProvisionCandidate | None: ...
 
     def list_for_document(self, document_id: str) -> list[ProvisionCandidate]: ...
+
+    def set_status(self, candidate_id: str, status: ProvisionCandidateStatus) -> None: ...

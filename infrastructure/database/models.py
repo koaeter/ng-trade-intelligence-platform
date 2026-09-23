@@ -186,3 +186,13 @@ class ProvisionCandidateModel(Base):
     locator: Mapped[str] = mapped_column(String(1000), nullable=False)
     candidate_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+
+ 
+class ProvisionCandidateReviewModel(Base):
+    __tablename__ = "provision_candidate_reviews"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(64), ForeignKey("provision_candidates.id", ondelete="CASCADE"), nullable=False, index=True)
+    reviewer_reference: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

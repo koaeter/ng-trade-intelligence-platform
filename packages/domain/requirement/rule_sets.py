@@ -4,6 +4,9 @@ from enum import Enum
 
 
 class RuleSetStatus(str, Enum):
+    DRAFT = "DRAFT"
+    VALIDATED = "VALIDATED"
+    PUBLISHED = "PUBLISHED"
     ACTIVE = "ACTIVE"
     RETIRED = "RETIRED"
 

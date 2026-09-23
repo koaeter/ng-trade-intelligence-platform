@@ -95,6 +95,7 @@ class SourceModel(Base):
     source_type: Mapped[str] = mapped_column(String(64), nullable=False)
     jurisdiction: Mapped[str | None] = mapped_column(String(128))
     official_url: Mapped[str | None] = mapped_column(String(1000))
+    endpoint_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("authority_endpoints.id"), index=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="DISCOVERED")
 
 

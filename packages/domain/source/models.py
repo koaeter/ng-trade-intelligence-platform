@@ -23,6 +23,7 @@ class Source:
     jurisdiction: str | None = None
     official_url: str | None = None
     status: SourceStatus = SourceStatus.DISCOVERED
+    endpoint_id: str | None = None
 
 
 @dataclass(frozen=True)

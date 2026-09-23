@@ -131,15 +131,16 @@ class SqlAlchemySourceRepository(SourceRepository):
         row.source_type = source.source_type
         row.jurisdiction = source.jurisdiction
         row.official_url = source.official_url
+        row.endpoint_id = source.endpoint_id
         row.status = source.status.value
         self._session.flush()
 
     def add(self, source: Source) -> None:
-        self._session.add(SourceModel(id=source.id, name=source.name, organization=source.organization, source_type=source.source_type, jurisdiction=source.jurisdiction, official_url=source.official_url, status=source.status.value))
+        self._session.add(SourceModel(id=source.id, name=source.name, organization=source.organization, source_type=source.source_type, jurisdiction=source.jurisdiction, official_url=source.official_url, endpoint_id=source.endpoint_id, status=source.status.value))
         self._session.flush()
     def get(self, source_id: str) -> Source | None:
         row = self._session.get(SourceModel, source_id)
-        return None if row is None else Source(row.id, row.name, row.organization, row.source_type, row.jurisdiction, row.official_url, SourceStatus(row.status))
+        return None if row is None else Source(row.id, row.name, row.organization, row.source_type, row.jurisdiction, row.official_url, SourceStatus(row.status), row.endpoint_id)
 
 
 class SqlAlchemyDocumentRepository(DocumentRepository):

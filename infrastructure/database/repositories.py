@@ -567,3 +567,41 @@ class SqlAlchemyRuleSetMembershipRepository:
             )
             for row in rows
         ]
+
+ 
+class SqlAlchemyRequirementRevisionRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, revision) -> None:
+        self._session.add(RequirementRevisionModel(
+            id=revision.id,
+            requirement_id=revision.requirement_id,
+            revision=revision.revision,
+            name=revision.name,
+            effective_from=revision.effective_from,
+            effective_to=revision.effective_to,
+            product_ids=list(revision.product_ids),
+            hs_codes=[list(x) for x in revision.hs_codes],
+            origin_country_codes=list(revision.origin_country_codes),
+            destination_market_codes=list(revision.destination_market_codes),
+            evidence_ids=list(revision.evidence_ids),
+            scope_is_general=revision.scope_is_general,
+        ))
+        self._session.flush()
+
+    def get(self, revision_id: str):
+        from packages.domain.requirement.revisions import RequirementRevision
+        row = self._session.get(RequirementRevisionModel, revision_id)
+        if row is None:
+            return None
+        return RequirementRevision(
+            row.id, row.requirement_id, row.revision, row.name,
+            row.effective_from, row.effective_to,
+            tuple(row.product_ids),
+            tuple(tuple(x) for x in row.hs_codes),
+            tuple(row.origin_country_codes),
+            tuple(row.destination_market_codes),
+            tuple(row.evidence_ids),
+            row.scope_is_general,
+        )

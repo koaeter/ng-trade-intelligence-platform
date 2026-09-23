@@ -279,3 +279,19 @@ class RuleSetRequirementMembershipModel(Base):
     rule_set_id: Mapped[str] = mapped_column(String(64), ForeignKey("rule_set_versions.id", ondelete="CASCADE"), primary_key=True)
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
     requirement_revision: Mapped[str] = mapped_column(String(64), nullable=False)
+
+ 
+class RequirementRevisionModel(Base):
+    __tablename__ = "requirement_revisions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), nullable=False, index=True)
+    revision: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    effective_from: Mapped[date] = mapped_column(Date, nullable=False)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    product_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    hs_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    origin_country_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    destination_market_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    scope_is_general: Mapped[bool] = mapped_column(Boolean, nullable=False)

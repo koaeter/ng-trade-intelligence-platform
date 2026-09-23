@@ -288,3 +288,44 @@ class SqlAlchemyProvisionCandidateReviewRepository:
             reviewed_at=reviewed_at,
         ))
         self._session.flush()
+
+ 
+class SqlAlchemyRequirementCandidateRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, candidate) -> None:
+        self._session.add(RequirementCandidateModel(
+            id=candidate.id,
+            provision_id=candidate.provision_id,
+            document_id=candidate.document_id,
+            proposed_name=candidate.proposed_name,
+            text=candidate.text,
+            status=candidate.status.value,
+        ))
+        self._session.flush()
+
+    def get(self, candidate_id: str):
+        row = self._session.get(RequirementCandidateModel, candidate_id)
+        if row is None:
+            return None
+        from packages.domain.requirement.candidates import RequirementCandidate, RequirementCandidateStatus
+        return RequirementCandidate(
+            row.id, row.provision_id, row.document_id, row.proposed_name,
+            row.text, RequirementCandidateStatus(row.status),
+        )
+
+    def list_for_provision(self, provision_id: str):
+        from packages.domain.requirement.candidates import RequirementCandidate, RequirementCandidateStatus
+        rows = self._session.scalars(
+            select(RequirementCandidateModel)
+            .where(RequirementCandidateModel.provision_id == provision_id)
+            .order_by(RequirementCandidateModel.id)
+        ).all()
+        return [
+            RequirementCandidate(
+                row.id, row.provision_id, row.document_id, row.proposed_name,
+                row.text, RequirementCandidateStatus(row.status),
+            )
+            for row in rows
+        ]

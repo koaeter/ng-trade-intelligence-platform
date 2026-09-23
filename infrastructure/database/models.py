@@ -196,3 +196,13 @@ class ProvisionCandidateReviewModel(Base):
     decision: Mapped[str] = mapped_column(String(32), nullable=False)
     reason: Mapped[str | None] = mapped_column(Text)
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+ 
+class RequirementCandidateModel(Base):
+    __tablename__ = "requirement_candidates"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    provision_id: Mapped[str] = mapped_column(String(64), ForeignKey("provisions.id"), nullable=False, index=True, unique=True)
+    document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    proposed_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)

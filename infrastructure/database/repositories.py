@@ -363,3 +363,18 @@ class SqlAlchemyRequirementScopeCandidateRepository:
             effective_to=row.effective_to,
             conditions=tuple(row.conditions),
         )
+
+ 
+class SqlAlchemyRequirementCandidateReviewRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, candidate_id: str, reviewer_reference: str, scope_reviewed: bool, reviewed_at) -> None:
+        self._session.add(RequirementCandidateReviewModel(
+            id=str(uuid4()),
+            candidate_id=candidate_id,
+            reviewer_reference=reviewer_reference,
+            scope_reviewed=scope_reviewed,
+            reviewed_at=reviewed_at,
+        ))
+        self._session.flush()

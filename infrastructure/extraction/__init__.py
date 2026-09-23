@@ -1,0 +1,1 @@
+"""Concrete document extraction adapters."""

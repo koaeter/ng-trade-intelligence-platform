@@ -3,12 +3,25 @@ from typing import BinaryIO, Protocol
 
 from packages.application.source.object_storage import ObjectStorage
 from packages.domain.source.artifacts import ArtifactKind, ExtractedText, SourceArtifact
+from packages.domain.source.extraction import ExtractionSegment
 
 
 @dataclass(frozen=True)
 class ExtractionPolicy:
+    max_input_bytes: int = 50_000_000
     max_output_characters: int = 2_000_000
     max_pages: int = 500
+    max_zip_members: int = 5_000
+    max_zip_member_bytes: int = 20_000_000
+    max_zip_uncompressed_bytes: int = 100_000_000
+
+
+@dataclass(frozen=True)
+class ExtractionFragment:
+    text: str
+    page_number: int | None = None
+    section: str | None = None
+    locator: str | None = None
 
 
 @dataclass(frozen=True)
@@ -19,6 +32,7 @@ class ExtractionResult:
     extractor_version: str
     ocr_used: bool
     page_count: int | None = None
+    fragments: tuple[ExtractionFragment, ...] = ()
 
 
 class DocumentExtractor(Protocol):
@@ -31,14 +45,17 @@ class TextExtractor:
     supported_kinds = frozenset({ArtifactKind.TEXT, ArtifactKind.HTML, ArtifactKind.CSV})
 
     def extract(self, content: BinaryIO, policy: ExtractionPolicy) -> ExtractionResult:
-        data = content.read(policy.max_output_characters + 1)
-        if len(data) > policy.max_output_characters:
-            raise ValueError("Extracted text exceeds configured maximum")
+        data = _read_bounded(content, policy.max_input_bytes)
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise ValueError("Text artifact is not valid UTF-8") from exc
-        return ExtractionResult("", text, "utf8-text-extractor", "1", False)
+        if len(text) > policy.max_output_characters:
+            raise ValueError("Extracted text exceeds configured maximum")
+        lines = tuple(line.strip() for line in text.splitlines() if line.strip())
+        fragments = tuple(ExtractionFragment(line, locator=f"line={index}")
+                          for index, line in enumerate(lines, 1))
+        return ExtractionResult("", text, "utf8-text-extractor", "2", False, None, fragments)
 
 
 class ExtractedTextService:
@@ -58,7 +75,7 @@ class ExtractedTextService:
             result = extractor.extract(content, self.policy)
         return ExtractionResult(
             artifact.id, result.text, result.extractor, result.extractor_version,
-            result.ocr_used, result.page_count,
+            result.ocr_used, result.page_count, result.fragments,
         )
 
     @staticmethod
@@ -72,3 +89,29 @@ class ExtractedTextService:
             extracted_at=datetime.now(timezone.utc),
             ocr_used=result.ocr_used,
         )
+
+    @staticmethod
+    def to_segments(result: ExtractionResult) -> tuple[ExtractionSegment, ...]:
+        return tuple(
+            ExtractionSegment(
+                id=f"{result.artifact_id}:segment:{index}",
+                artifact_id=result.artifact_id,
+                sequence=index,
+                text=fragment.text,
+                page_number=fragment.page_number,
+                section=fragment.section,
+                source_start=None,
+                source_end=None,
+                locator=fragment.locator,
+            )
+            for index, fragment in enumerate(result.fragments)
+        )
+
+
+def _read_bounded(content: BinaryIO, maximum: int) -> bytes:
+    if maximum <= 0:
+        raise ValueError("Extraction input limit must be positive")
+    data = content.read(maximum + 1)
+    if len(data) > maximum:
+        raise ValueError("Source artifact exceeds configured input limit")
+    return data

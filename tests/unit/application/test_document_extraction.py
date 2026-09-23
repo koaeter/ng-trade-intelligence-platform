@@ -42,3 +42,11 @@ def test_domain_conversion_preserves_extraction_metadata():
     assert domain.artifact_id == "artifact-1"
     assert domain.text == "hello"
     assert domain.extractor == "utf8-text-extractor"
+
+
+def test_extraction_fragments_convert_to_stable_domain_segments():
+    result = ExtractedTextService(Store(b"first\\nsecond"), [TextExtractor()]).extract(artifact())
+    segments = ExtractedTextService.to_segments(result)
+    assert [segment.sequence for segment in segments] == [0, 1]
+    assert segments[0].id == "artifact-1:segment:0"
+    assert segments[1].text == "second"

@@ -7,17 +7,19 @@ from infrastructure.database.models import (
     ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
-    RequirementProductModel, SourceArtifactModel, SourceModel,
+    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
 from packages.application.source.artifact_repositories import ExtractedTextRepository, SourceArtifactRepository
+from packages.application.source.extraction_repositories import ExtractionSegmentRepository
 from packages.application.source.repositories import DocumentRepository, ProvisionRepository, SourceRepository
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
+from packages.domain.source.extraction import ExtractionSegment
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
 
 
@@ -182,3 +184,36 @@ class SqlAlchemyExtractedTextRepository(ExtractedTextRepository):
             row.artifact_id, row.text, row.extractor, row.extractor_version,
             row.extracted_at, row.ocr_used,
         )
+
+
+class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, segment: ExtractionSegment) -> None:
+        self._session.add(ExtractionSegmentModel(
+            id=segment.id,
+            artifact_id=segment.artifact_id,
+            sequence=segment.sequence,
+            text=segment.text,
+            page_number=segment.page_number,
+            section=segment.section,
+            source_start=segment.source_start,
+            source_end=segment.source_end,
+            locator=segment.locator,
+        ))
+        self._session.flush()
+
+    def list_for_artifact(self, artifact_id: str) -> list[ExtractionSegment]:
+        rows = self._session.scalars(
+            select(ExtractionSegmentModel)
+            .where(ExtractionSegmentModel.artifact_id == artifact_id)
+            .order_by(ExtractionSegmentModel.sequence)
+        ).all()
+        return [
+            ExtractionSegment(
+                row.id, row.artifact_id, row.sequence, row.text,
+                row.page_number, row.section, row.source_start, row.source_end, row.locator,
+            )
+            for row in rows
+        ]

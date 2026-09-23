@@ -95,3 +95,40 @@ def test_accepted_candidate_rejects_unknown_provision_type():
         assert False, "expected ValueError"
     except ValueError as exc:
         assert "controlled provision type" in str(exc)
+
+
+class Documents:
+    def get(self, key):
+        from packages.domain.source.models import Document
+        return Document("doc-1", "source-1", "Doc", "REGULATION")
+
+
+class Sources:
+    def __init__(self):
+        from packages.domain.source.models import Source, SourceStatus
+        self.value = Source("source-1", "Source", "Authority", "GOV", "NG", "https://example.gov", SourceStatus.CANDIDATE)
+        self.updated = None
+    def get(self, key):
+        return self.value
+    def update(self, value):
+        self.updated = value
+
+
+class CandidateRepo(Candidates):
+    def list_for_document(self, key):
+        return [self.candidate]
+
+
+def test_terminal_candidate_review_advances_source_to_reviewed():
+    candidates = CandidateRepo(candidate())
+    sources = Sources()
+    service = ProvisionReviewService(
+        candidates, Provisions(), Reviews(), Documents(), sources
+    )
+    service.review(
+        ProvisionReviewDecision(
+            "candidate-1", "reviewer-1", ProvisionCandidateStatus.REJECTED,
+            reason="Not a regulatory provision.",
+        )
+    )
+    assert sources.updated.status.value == "REVIEWED"

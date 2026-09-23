@@ -19,10 +19,12 @@ class ProvisionReviewDecision:
 class ProvisionReviewService:
     """Governed transition from extracted candidate to authoritative Provision."""
 
-    def __init__(self, candidates, provisions, reviews) -> None:
+    def __init__(self, candidates, provisions, reviews, documents=None, sources=None) -> None:
         self.candidates = candidates
         self.provisions = provisions
         self.reviews = reviews
+        self.documents = documents
+        self.sources = sources
 
     def review(self, decision: ProvisionReviewDecision) -> Provision | None:
         candidate = self.candidates.get(decision.candidate_id)
@@ -46,6 +48,7 @@ class ProvisionReviewService:
 
         if decision.decision == ProvisionCandidateStatus.REJECTED:
             self.candidates.set_status(candidate.id, ProvisionCandidateStatus.REJECTED)
+            self._advance_source_if_review_complete(candidate.document_id)
             return None
 
         if decision.decision != ProvisionCandidateStatus.ACCEPTED:
@@ -67,4 +70,25 @@ class ProvisionReviewService:
         )
         self.provisions.add(provision)
         self.candidates.set_status(candidate.id, ProvisionCandidateStatus.ACCEPTED)
+        self._advance_source_if_review_complete(candidate.document_id)
         return provision
+
+    def _advance_source_if_review_complete(self, document_id: str) -> None:
+        if self.documents is None or self.sources is None:
+            return
+        document = self.documents.get(document_id)
+        if document is None:
+            return
+        candidates = self.candidates.list_for_document(document_id)
+        terminal = {ProvisionCandidateStatus.ACCEPTED, ProvisionCandidateStatus.REJECTED}
+        if not candidates or any(item.status not in terminal for item in candidates):
+            return
+        source = self.sources.get(document.source_id)
+        if source is None:
+            return
+        from packages.application.source.lifecycle import SourceLifecycleService
+        from packages.domain.source.models import SourceStatus
+        if source.status == SourceStatus.CANDIDATE:
+            self.sources.update(
+                SourceLifecycleService().transition(source, SourceStatus.REVIEWED)
+            )

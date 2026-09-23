@@ -567,3 +567,8 @@ Registered sources are connected to immutable operational acquisition events bef
 `Authority → AuthorityEndpoint → Source → AcquisitionEvent → SourceArtifact`
 
 An acquisition event records the retrieval attempt, endpoint provenance, timestamps, outcome, HTTP metadata, content length, response checksum, and bounded failure information. Successful acquisition may produce an artifact; failed acquisition remains auditable without an artifact. Acquisition provenance does not itself publish regulatory knowledge or establish legal authority.
+
+
+## Acquisition-to-artifact integrity
+
+When an acquisition event is attached to a captured artifact, the system requires the event to be successful, belong to the same source, and carry the same SHA-256 as the persisted artifact. This prevents a valid retrieval record from being silently attached to different bytes.

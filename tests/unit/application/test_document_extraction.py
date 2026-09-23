@@ -50,3 +50,21 @@ def test_extraction_fragments_convert_to_stable_domain_segments():
     assert [segment.sequence for segment in segments] == [0, 1]
     assert segments[0].id == "artifact-1:segment:0"
     assert segments[1].text == "second"
+
+
+class SourceStore:
+    def __init__(self):
+        from packages.domain.source.models import Source, SourceStatus
+        self.value = Source("source-1", "Source", "Authority", "GOV", "NG", "https://example.gov", SourceStatus.ACQUIRED)
+        self.updated = None
+    def get(self, key):
+        return self.value
+    def update(self, value):
+        self.updated = value
+
+
+def test_successful_extraction_advances_source_lifecycle():
+    sources = SourceStore()
+    service = ExtractedTextService(Store(b"hello"), [TextExtractor()], sources=sources)
+    service.extract(artifact())
+    assert sources.updated.status.value == "EXTRACTED"

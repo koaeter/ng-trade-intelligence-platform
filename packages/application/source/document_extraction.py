@@ -62,10 +62,11 @@ class ExtractedTextService:
     """Coordinates bounded extraction; parser implementations remain infrastructure concerns."""
 
     def __init__(self, storage: ObjectStorage, extractors: list[DocumentExtractor],
-                 policy: ExtractionPolicy | None = None) -> None:
+                 policy: ExtractionPolicy | None = None, sources=None) -> None:
         self.storage = storage
         self.extractors = extractors
         self.policy = policy or ExtractionPolicy()
+        self.sources = sources
 
     def extract(self, artifact: SourceArtifact) -> ExtractionResult:
         extractor = next((x for x in self.extractors if artifact.kind in x.supported_kinds), None)
@@ -73,10 +74,20 @@ class ExtractedTextService:
             raise ValueError(f"No extractor registered for artifact kind: {artifact.kind.value}")
         with self.storage.get(artifact.storage_key) as content:
             result = extractor.extract(content, self.policy)
-        return ExtractionResult(
+        final = ExtractionResult(
             artifact.id, result.text, result.extractor, result.extractor_version,
             result.ocr_used, result.page_count, result.fragments,
         )
+        if self.sources is not None:
+            source = self.sources.get(artifact.source_id)
+            if source is not None:
+                from packages.application.source.lifecycle import SourceLifecycleService
+                from packages.domain.source.models import SourceStatus
+                if source.status == SourceStatus.ACQUIRED:
+                    self.sources.update(
+                        SourceLifecycleService().transition(source, SourceStatus.EXTRACTED)
+                    )
+        return final
 
     @staticmethod
     def to_domain(result: ExtractionResult) -> ExtractedText:

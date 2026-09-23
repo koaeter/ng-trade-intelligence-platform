@@ -19,6 +19,8 @@ def evaluate_requirement(scenario: ExportScenario, requirement: Requirement, evi
         scope = requirement.scope_matches(scenario.product, scenario.hs_code, scenario.origin_country, scenario.destination_market)
         if scope is False:
             result = EvaluationResult.NOT_APPLICABLE
+        elif scope is None and not requirement.scope_is_general:
+            result = EvaluationResult.UNRESOLVED
         elif not evidence:
             result = EvaluationResult.INSUFFICIENT_EVIDENCE
         elif not all(item.verified for item in evidence):

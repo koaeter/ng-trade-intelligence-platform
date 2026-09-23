@@ -54,7 +54,7 @@ def test_evaluate_scenario_persists_each_requirement() -> None:
             return scenario() if scenario_id == "scenario-1" else None
     class Requirements:
         def list_all(self) -> list[Requirement]:
-            return [Requirement("req-1", "Active", date(2026, 1, 1)), Requirement("req-2", "Future", date(2027, 1, 1))]
+            return [Requirement("req-1", "Active", date(2026, 1, 1), scope_is_general=True), Requirement("req-2", "Future", date(2027, 1, 1))]
     class Evaluations:
         def __init__(self) -> None:
             self.items: list[object] = []

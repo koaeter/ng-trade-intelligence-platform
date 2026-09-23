@@ -41,6 +41,13 @@ class Evaluations:
         self.items.append(value)
 
 
+class RuleSets:
+    def get_active(self):
+        class Version:
+            version = "2026.09.23.1"
+        return Version()
+
+
 class Traces:
     def __init__(self):
         self.items = []
@@ -53,7 +60,7 @@ def test_orchestrator_persists_result_and_trace():
     traces = Traces()
     result = ScenarioEvaluationOrchestrator(
         Scenarios(), Requirements(), evaluations, EvidenceRepo(),
-        RuleNodes(), traces,
+        RuleNodes(), traces, RuleSets(),
     ).evaluate("s1")
 
     assert result[0].result.value == "APPLICABLE"

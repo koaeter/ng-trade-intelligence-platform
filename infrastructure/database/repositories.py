@@ -509,3 +509,20 @@ class SqlAlchemyApplicabilityTraceRepository:
             )
             for row in rows
         ]
+
+ 
+class SqlAlchemyRuleSetVersionRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get_active(self):
+        from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
+        rows = self._session.scalars(
+            select(RuleSetVersionModel)
+            .where(RuleSetVersionModel.status == RuleSetStatus.ACTIVE.value)
+            .order_by(RuleSetVersionModel.created_at.desc())
+        ).all()
+        if not rows:
+            return None
+        row = rows[0]
+        return RuleSetVersion(row.id, row.version, RuleSetStatus(row.status), row.created_at)

@@ -264,3 +264,11 @@ class ApplicabilityEvaluationTraceModel(Base):
     condition_result: Mapped[str] = mapped_column(String(16), nullable=False)
     evidence_result: Mapped[str] = mapped_column(String(32), nullable=False)
     final_result: Mapped[str] = mapped_column(String(32), nullable=False)
+
+ 
+class RuleSetVersionModel(Base):
+    __tablename__ = "rule_set_versions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    version: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

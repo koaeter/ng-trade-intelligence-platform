@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from infrastructure.database.authority_models import InstrumentModel, SourceAuthorityAssignmentModel
-from packages.domain.source.authority import AuthorityType, Instrument, InstrumentType, LegalEffect, SourceAuthorityAssignment
+from packages.domain.source.authority import AuthorityType, Instrument, InstrumentStatus, InstrumentType, LegalEffect, SourceAuthorityAssignment
 
 
 class SqlAlchemySourceAuthorityRepository:
@@ -56,7 +56,7 @@ class SqlAlchemyInstrumentRepository:
         self._session.add(InstrumentModel(
             id=instrument.id, document_id=instrument.document_id,
             instrument_type=instrument.instrument_type.value,
-            legal_effect=instrument.legal_effect.value, status=instrument.status,
+            legal_effect=instrument.legal_effect.value, status=instrument.status.value,
             parties=list(instrument.parties),
             supersedes_instrument_id=instrument.supersedes_instrument_id,
         ))
@@ -66,7 +66,7 @@ class SqlAlchemyInstrumentRepository:
         row = self._session.get(InstrumentModel, instrument_id)
         return None if row is None else Instrument(
             row.id, row.document_id, InstrumentType(row.instrument_type),
-            LegalEffect(row.legal_effect), row.status, tuple(row.parties),
+            LegalEffect(row.legal_effect), InstrumentStatus(row.status), tuple(row.parties),
             row.supersedes_instrument_id,
         )
 

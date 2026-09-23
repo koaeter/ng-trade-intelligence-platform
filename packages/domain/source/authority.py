@@ -22,6 +22,14 @@ class LegalEffect(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class InstrumentStatus(str, Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    SUPERSEDED = "SUPERSEDED"
+    TERMINATED = "TERMINATED"
+    EXPIRED = "EXPIRED"
+
+
 class InstrumentType(str, Enum):
     LAW = "LAW"
     REGULATION = "REGULATION"
@@ -61,6 +69,6 @@ class Instrument:
     document_id: str
     instrument_type: InstrumentType
     legal_effect: LegalEffect
-    status: str = "ACTIVE"
+    status: InstrumentStatus = InstrumentStatus.ACTIVE
     parties: tuple[str, ...] = ()
     supersedes_instrument_id: str | None = None

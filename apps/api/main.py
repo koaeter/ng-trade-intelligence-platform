@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from datetime import date
 from uuid import uuid4
 
@@ -21,9 +22,11 @@ from infrastructure.database.repositories import (
     SqlAlchemyAcquisitionEventRepository,
 )
 from infrastructure.database.session import get_session
+from infrastructure.acquisition.http import HTTPSourceFetcher
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
 from packages.application.source.register_source import RegisterSourceFromEndpoint
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
+from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -170,6 +173,37 @@ def get_export_scenario_results(scenario_id: str, session: Session = Depends(get
         raise HTTPException(status_code=404, detail="Export scenario not found")
     evaluations = SqlAlchemyApplicabilityEvaluationRepository(session).list_for_scenario(scenario_id)
     return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
+
+
+@app.post("/api/v1/authority-endpoints/{endpoint_id}/verify", response_model=AuthorityEndpointResponse, tags=["sources"])
+def verify_authority_endpoint(endpoint_id: str, session: Session = Depends(get_session)) -> AuthorityEndpointResponse:
+    endpoints = SqlAlchemyAuthorityEndpointRepository(session)
+    endpoint = endpoints.get(endpoint_id)
+    if endpoint is None:
+        raise HTTPException(status_code=404, detail="Authority endpoint not found")
+    host = urlparse(endpoint.url).hostname
+    if not host:
+        raise HTTPException(status_code=400, detail="Authority endpoint URL has no hostname")
+    fetcher = HTTPSourceFetcher(SourceAcquisitionPolicy(allowed_hosts=frozenset({host})))
+    try:
+        verified = VerifyAuthorityEndpoint(endpoints).execute(endpoint_id, fetcher)
+    except ValueError as exc:
+        session.commit()
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    session.commit()
+    return AuthorityEndpointResponse(
+        id=verified.id,
+        authority_id=verified.authority_id,
+        url=verified.url,
+        endpoint_type=verified.endpoint_type,
+        access_method=verified.access_method,
+        content_format=verified.content_format,
+        purpose=verified.purpose,
+        active=verified.active,
+        verification_status=verified.verification_status.value,
+        last_verified_at=verified.last_verified_at.isoformat() if verified.last_verified_at else None,
+        verification_note=verified.verification_note,
+    )
 
 
 @app.get("/api/v1/authorities/{authority_id}/endpoints", response_model=list[AuthorityEndpointResponse], tags=["sources"])

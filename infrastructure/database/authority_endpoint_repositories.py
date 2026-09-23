@@ -25,6 +25,22 @@ class SqlAlchemyAuthorityEndpointRepository:
         ))
         self._session.flush()
 
+    def update(self, endpoint: AuthorityEndpoint) -> None:
+        row = self._session.get(AuthorityEndpointModel, endpoint.id)
+        if row is None:
+            raise ValueError("Authority endpoint does not exist")
+        row.authority_id = endpoint.authority_id
+        row.url = endpoint.url
+        row.endpoint_type = endpoint.endpoint_type
+        row.access_method = endpoint.access_method
+        row.content_format = endpoint.content_format
+        row.purpose = endpoint.purpose
+        row.active = endpoint.active
+        row.verification_status = endpoint.verification_status.value
+        row.last_verified_at = endpoint.last_verified_at
+        row.verification_note = endpoint.verification_note
+        self._session.flush()
+
     def _to_domain(self, row: AuthorityEndpointModel) -> AuthorityEndpoint:
         return AuthorityEndpoint(
             row.id, row.authority_id, row.url, row.endpoint_type,

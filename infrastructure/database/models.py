@@ -174,3 +174,15 @@ class ExtractionSegmentModel(Base):
     source_start: Mapped[int | None] = mapped_column(nullable=True)
     source_end: Mapped[int | None] = mapped_column(nullable=True)
     locator: Mapped[str | None] = mapped_column(String(1000))
+
+
+class ProvisionCandidateModel(Base):
+    __tablename__ = "provision_candidates"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    artifact_id: Mapped[str] = mapped_column(String(64), ForeignKey("source_artifacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    extraction_segment_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_segments.id", ondelete="CASCADE"), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    locator: Mapped[str] = mapped_column(String(1000), nullable=False)
+    candidate_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)

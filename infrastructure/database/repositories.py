@@ -7,7 +7,7 @@ from infrastructure.database.models import (
     ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
-    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel,
+    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel, ProvisionCandidateModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
@@ -20,6 +20,7 @@ from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
 from packages.domain.source.extraction import ExtractionSegment
+from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
 
 
@@ -214,6 +215,45 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             ExtractionSegment(
                 row.id, row.artifact_id, row.sequence, row.text,
                 row.page_number, row.section, row.source_start, row.source_end, row.locator,
+            )
+            for row in rows
+        ]
+
+
+class SqlAlchemyProvisionCandidateRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, candidate: ProvisionCandidate) -> None:
+        self._session.add(ProvisionCandidateModel(
+            id=candidate.id,
+            document_id=candidate.document_id,
+            artifact_id=candidate.artifact_id,
+            extraction_segment_id=candidate.extraction_segment_id,
+            text=candidate.text,
+            locator=candidate.locator,
+            candidate_type=candidate.candidate_type,
+            status=candidate.status.value,
+        ))
+        self._session.flush()
+
+    def get(self, candidate_id: str) -> ProvisionCandidate | None:
+        row = self._session.get(ProvisionCandidateModel, candidate_id)
+        return None if row is None else ProvisionCandidate(
+            row.id, row.document_id, row.artifact_id, row.extraction_segment_id,
+            row.text, row.locator, row.candidate_type, ProvisionCandidateStatus(row.status),
+        )
+
+    def list_for_document(self, document_id: str) -> list[ProvisionCandidate]:
+        rows = self._session.scalars(
+            select(ProvisionCandidateModel)
+            .where(ProvisionCandidateModel.document_id == document_id)
+            .order_by(ProvisionCandidateModel.id)
+        ).all()
+        return [
+            ProvisionCandidate(
+                row.id, row.document_id, row.artifact_id, row.extraction_segment_id,
+                row.text, row.locator, row.candidate_type, ProvisionCandidateStatus(row.status),
             )
             for row in rows
         ]

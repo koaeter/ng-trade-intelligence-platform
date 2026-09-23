@@ -3,8 +3,8 @@ from hashlib import sha256
 from io import BytesIO
 from typing import BinaryIO
 
+from packages.application.source.content_validation import ContentValidationService, NoOpMalwareScanner
 from packages.application.source.object_storage import ObjectStorage
-
 
 @dataclass(frozen=True)
 class ArtifactAcquisitionPolicy:
@@ -16,7 +16,6 @@ class ArtifactAcquisitionPolicy:
         "text/csv", "image/jpeg", "image/png",
     })
 
-
 @dataclass(frozen=True)
 class AcquiredObject:
     storage_key: str
@@ -24,13 +23,14 @@ class AcquiredObject:
     size_bytes: int
     content_type: str | None
 
-
 class ArtifactAcquisitionService:
     """Validates bounded source content and stores it through the storage port."""
 
-    def __init__(self, storage: ObjectStorage, policy: ArtifactAcquisitionPolicy | None = None) -> None:
+    def __init__(self, storage: ObjectStorage, policy: ArtifactAcquisitionPolicy | None = None,
+                 validator: ContentValidationService | None = None) -> None:
         self.storage = storage
         self.policy = policy or ArtifactAcquisitionPolicy()
+        self.validator = validator or ContentValidationService(NoOpMalwareScanner())
 
     def acquire(self, key: str, content: BinaryIO, content_type: str | None = None) -> AcquiredObject:
         if not key or key.startswith("/") or ".." in key.split("/"):
@@ -51,7 +51,12 @@ class ArtifactAcquisitionService:
             digest.update(chunk)
             chunks.append(chunk)
 
-        stored = self.storage.put(key, BytesIO(b"".join(chunks)), content_type)
+        data = b"".join(chunks)
+        validation = self.validator.validate(BytesIO(data), content_type)
+        if not validation.accepted:
+            raise ValueError(validation.reason or "Artifact content validation failed")
+
+        stored = self.storage.put(key, BytesIO(data), content_type)
         if stored.key != key:
             raise ValueError("Object storage returned a different storage key")
         if stored.size_bytes is not None and stored.size_bytes != size:

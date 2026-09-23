@@ -15,3 +15,6 @@ class AuthorityEndpointModel(Base):
     content_format: Mapped[str] = mapped_column(String(64), nullable=False)
     purpose: Mapped[str | None] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    verification_status: Mapped[str] = mapped_column(String(32), nullable=False, default="UNVERIFIED")
+    last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verification_note: Mapped[str | None] = mapped_column(Text)

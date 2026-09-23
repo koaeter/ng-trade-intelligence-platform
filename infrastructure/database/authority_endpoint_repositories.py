@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from infrastructure.database.authority_endpoint_models import AuthorityEndpointModel
-from packages.domain.source.authority_endpoint import AuthorityEndpoint
+from packages.domain.source.authority_endpoint import AuthorityEndpoint, EndpointVerificationStatus
 
 
 class SqlAlchemyAuthorityEndpointRepository:
@@ -19,6 +19,9 @@ class SqlAlchemyAuthorityEndpointRepository:
             content_format=endpoint.content_format,
             purpose=endpoint.purpose,
             active=endpoint.active,
+            verification_status=endpoint.verification_status.value,
+            last_verified_at=endpoint.last_verified_at,
+            verification_note=endpoint.verification_note,
         ))
         self._session.flush()
 
@@ -26,6 +29,7 @@ class SqlAlchemyAuthorityEndpointRepository:
         return AuthorityEndpoint(
             row.id, row.authority_id, row.url, row.endpoint_type,
             row.access_method, row.content_format, row.purpose, row.active,
+            EndpointVerificationStatus(row.verification_status), row.last_verified_at, row.verification_note,
         )
 
     def get(self, endpoint_id: str) -> AuthorityEndpoint | None:

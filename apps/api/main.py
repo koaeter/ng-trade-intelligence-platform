@@ -17,9 +17,11 @@ from infrastructure.database.repositories import (
     SqlAlchemyProvisionRepository,
     SqlAlchemyRequirementRepository,
     SqlAlchemySourceRepository,
+    SqlAlchemyAuthorityEndpointRepository,
 )
 from infrastructure.database.session import get_session
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
+from packages.application.source.register_source import RegisterSourceFromEndpoint
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -59,7 +61,7 @@ class SourceRequest(BaseModel):
     organization: str
     source_type: str
     jurisdiction: str | None = None
-    official_url: str | None = None
+    endpoint_id: str
 
 
 class DocumentRequest(BaseModel):
@@ -137,10 +139,24 @@ def get_export_scenario_results(scenario_id: str, session: Session = Depends(get
 
 @app.post("/api/v1/sources", status_code=201, tags=["sources"])
 def create_source(payload: SourceRequest, session: Session = Depends(get_session)):
-    source = Source(str(uuid4()), **payload.model_dump())
-    SqlAlchemySourceRepository(session).add(source)
+    source = Source(
+        str(uuid4()),
+        payload.name,
+        payload.organization,
+        payload.source_type,
+        payload.jurisdiction,
+        None,
+        endpoint_id=payload.endpoint_id,
+    )
+    try:
+        registered = RegisterSourceFromEndpoint(
+            SqlAlchemyAuthorityEndpointRepository(session),
+            SqlAlchemySourceRepository(session),
+        ).execute(source, payload.endpoint_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     session.commit()
-    return source
+    return registered
 
 
 @app.get("/api/v1/sources/{source_id}", tags=["sources"])

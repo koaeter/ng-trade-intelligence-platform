@@ -30,6 +30,37 @@ class SourceFetcher(Protocol):
     def fetch(self, url: str) -> AcquiredSourceResponse: ...
 
 
+class RegisteredSourceAcquisitionService:
+    """Acquires only from a source already registered in the source registry."""
+
+    def __init__(self, sources, events: AcquisitionEventRepository) -> None:
+        self.sources = sources
+        self.events = events
+
+    def acquire(
+        self,
+        source_id: str,
+        fetcher: SourceFetcher,
+        user_agent: str | None = None,
+    ) -> tuple[AcquiredSourceResponse, str]:
+        source = self.sources.get(source_id)
+        if source is None:
+            raise ValueError("Source does not exist")
+        if not source.endpoint_id:
+            raise ValueError("Source is not linked to an authority endpoint")
+        if not source.official_url:
+            raise ValueError("Registered source has no acquisition URL")
+        response, event_id = TrackedSourceAcquisitionService(self.events).acquire(
+            source=source,
+            fetcher=fetcher,
+            url=source.official_url,
+            user_agent=user_agent,
+        )
+        if response is None:
+            raise ValueError("Successful acquisition returned no response")
+        return response, event_id
+
+
 class TrackedSourceAcquisitionService:
     """Fetches a registered source while persisting an auditable acquisition attempt."""
 

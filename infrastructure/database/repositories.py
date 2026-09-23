@@ -378,3 +378,40 @@ class SqlAlchemyRequirementCandidateReviewRepository:
             reviewed_at=reviewed_at,
         ))
         self._session.flush()
+
+ 
+class SqlAlchemyRequirementConditionCandidateRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, condition) -> None:
+        from hashlib import sha256
+        key = f"{condition.candidate_id}:{condition.field.value}:{condition.operator.value}:{condition.value or ''}"
+        condition_id = sha256(key.encode()).hexdigest()[:64]
+        self._session.merge(RequirementConditionCandidateModel(
+            id=condition_id,
+            candidate_id=condition.candidate_id,
+            field=condition.field.value,
+            operator=condition.operator.value,
+            value=condition.value,
+        ))
+        self._session.flush()
+
+    def list_for_candidate(self, candidate_id: str):
+        from packages.domain.requirement.conditions import (
+            RequirementConditionCandidate, RequirementConditionField, RequirementConditionOperator,
+        )
+        rows = self._session.scalars(
+            select(RequirementConditionCandidateModel)
+            .where(RequirementConditionCandidateModel.candidate_id == candidate_id)
+            .order_by(RequirementConditionCandidateModel.id)
+        ).all()
+        return [
+            RequirementConditionCandidate(
+                row.candidate_id,
+                RequirementConditionField(row.field),
+                RequirementConditionOperator(row.operator),
+                row.value,
+            )
+            for row in rows
+        ]

@@ -227,3 +227,12 @@ class RequirementCandidateReviewModel(Base):
     reviewer_reference: Mapped[str] = mapped_column(String(255), nullable=False)
     scope_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False)
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+ 
+class RequirementConditionCandidateModel(Base):
+    __tablename__ = "requirement_condition_candidates"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirement_candidates.id", ondelete="CASCADE"), nullable=False, index=True)
+    field: Mapped[str] = mapped_column(String(64), nullable=False)
+    operator: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[str | None] = mapped_column(Text)

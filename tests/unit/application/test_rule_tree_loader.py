@@ -8,7 +8,7 @@ from packages.domain.requirement.rule_tree import ConditionGroupOperator
 
 def node(node_id, parent, sequence, node_type, **kwargs):
     return RequirementRuleNode(
-        node_id, "req-1", parent, sequence, node_type, **kwargs
+        node_id, "req-1", "req-1:r1", parent, sequence, node_type, **kwargs
     )
 
 
@@ -22,7 +22,7 @@ def test_loader_builds_nested_tree():
             value="100",
         ),
     ]
-    result = RequirementRuleTreeLoader().load("req-1", nodes)
+    result = RequirementRuleTreeLoader().load("req-1", "req-1:r1", nodes)
     assert result.operator == ConditionGroupOperator.AND
     assert len(result.children) == 1
 

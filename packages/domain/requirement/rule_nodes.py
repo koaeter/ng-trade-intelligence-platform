@@ -16,6 +16,7 @@ class RequirementRuleNodeType(str, Enum):
 class RequirementRuleNode:
     id: str
     requirement_id: str
+    requirement_revision_id: str
     parent_id: str | None
     sequence: int
     node_type: RequirementRuleNodeType

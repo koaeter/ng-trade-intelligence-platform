@@ -243,6 +243,7 @@ class RequirementRuleNodeModel(Base):
     __tablename__ = "requirement_rule_nodes"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id", ondelete="CASCADE"), nullable=False, index=True)
+    requirement_revision_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("requirement_revisions.id"), nullable=True, index=True)
     parent_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("requirement_rule_nodes.id", ondelete="CASCADE"), nullable=True, index=True)
     sequence: Mapped[int] = mapped_column(nullable=False)
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)

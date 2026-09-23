@@ -3,7 +3,7 @@ from packages.domain.requirement.rule_tree import ConditionGroup, ConditionLeaf,
 
 
 class RequirementRuleTreeLoader:
-    def load(self, requirement_id: str, nodes: list[RequirementRuleNode]) -> ConditionNode:
+    def load(self, requirement_id: str, requirement_revision_id: str, nodes: list[RequirementRuleNode]) -> ConditionNode:
         if not nodes:
             raise ValueError("Requirement has no rule tree")
         by_id = {node.id: node for node in nodes}
@@ -13,6 +13,8 @@ class RequirementRuleTreeLoader:
         for node in nodes:
             if node.requirement_id != requirement_id:
                 raise ValueError("Requirement rule node references another requirement")
+            if node.requirement_revision_id != requirement_revision_id:
+                raise ValueError("Requirement rule node references another requirement revision")
             if node.parent_id is not None and node.parent_id not in by_id:
                 raise ValueError("Requirement rule node references a missing parent")
 

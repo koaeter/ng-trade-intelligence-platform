@@ -431,6 +431,7 @@ class SqlAlchemyRequirementRuleNodeRepository:
         self._session.add(RequirementRuleNodeModel(
             id=node.id,
             requirement_id=node.requirement_id,
+            requirement_revision_id=node.requirement_revision_id,
             parent_id=node.parent_id,
             sequence=node.sequence,
             node_type=node.node_type.value,
@@ -450,10 +451,13 @@ class SqlAlchemyRequirementRuleNodeRepository:
             .where(RequirementRuleNodeModel.requirement_id == requirement_id)
             .order_by(RequirementRuleNodeModel.parent_id, RequirementRuleNodeModel.sequence)
         ).all()
+        if any(row.requirement_revision_id is None for row in rows):
+            raise ValueError("Requirement rule node is not bound to a revision")
         return [
             RequirementRuleNode(
                 row.id,
                 row.requirement_id,
+                row.requirement_revision_id,
                 row.parent_id,
                 row.sequence,
                 RequirementRuleNodeType(row.node_type),

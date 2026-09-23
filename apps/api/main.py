@@ -18,6 +18,7 @@ from infrastructure.database.repositories import (
     SqlAlchemyRequirementRepository,
     SqlAlchemySourceRepository,
     SqlAlchemyAuthorityEndpointRepository,
+    SqlAlchemyAcquisitionEventRepository,
 )
 from infrastructure.database.session import get_session
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
@@ -213,7 +214,7 @@ def list_source_acquisition_events(source_id: str, session: Session = Depends(ge
     if SqlAlchemySourceRepository(session).get(source_id) is None:
         raise HTTPException(status_code=404, detail="Source not found")
     events = GetSourceAcquisitionHistory(
-        __import__("infrastructure.database.repositories", fromlist=["SqlAlchemyAcquisitionEventRepository"]).SqlAlchemyAcquisitionEventRepository(session)
+        SqlAlchemyAcquisitionEventRepository(session)
     ).execute(source_id)
     return [
         AcquisitionEventResponse(

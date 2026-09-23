@@ -329,3 +329,37 @@ class SqlAlchemyRequirementCandidateRepository:
             )
             for row in rows
         ]
+
+ 
+class SqlAlchemyRequirementScopeCandidateRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, scope) -> None:
+        self._session.merge(RequirementScopeCandidateModel(
+            candidate_id=scope.candidate_id,
+            product_ids=list(scope.product_ids),
+            hs_codes=[list(x) for x in scope.hs_codes],
+            origin_country_codes=list(scope.origin_country_codes),
+            destination_market_codes=list(scope.destination_market_codes),
+            effective_from=scope.effective_from,
+            effective_to=scope.effective_to,
+            conditions=list(scope.conditions),
+        ))
+        self._session.flush()
+
+    def get(self, candidate_id: str):
+        row = self._session.get(RequirementScopeCandidateModel, candidate_id)
+        if row is None:
+            return None
+        from packages.domain.requirement.scope_candidates import RequirementScopeCandidate
+        return RequirementScopeCandidate(
+            candidate_id=row.candidate_id,
+            product_ids=tuple(row.product_ids),
+            hs_codes=tuple(tuple(x) for x in row.hs_codes),
+            origin_country_codes=tuple(row.origin_country_codes),
+            destination_market_codes=tuple(row.destination_market_codes),
+            effective_from=row.effective_from,
+            effective_to=row.effective_to,
+            conditions=tuple(row.conditions),
+        )

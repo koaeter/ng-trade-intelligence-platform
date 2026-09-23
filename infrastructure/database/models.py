@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
 
@@ -206,3 +206,15 @@ class RequirementCandidateModel(Base):
     proposed_name: Mapped[str] = mapped_column(String(255), nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+
+ 
+class RequirementScopeCandidateModel(Base):
+    __tablename__ = "requirement_scope_candidates"
+    candidate_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirement_candidates.id", ondelete="CASCADE"), primary_key=True)
+    product_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    hs_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    origin_country_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    destination_market_codes: Mapped[list] = mapped_column(JSON, nullable=False)
+    effective_from: Mapped[date | None] = mapped_column(Date)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    conditions: Mapped[list] = mapped_column(JSON, nullable=False)

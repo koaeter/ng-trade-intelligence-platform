@@ -30,3 +30,17 @@ def test_activation_retires_previous_active_version():
 
     assert repo.items["new"].status == RuleSetStatus.ACTIVE
     assert repo.items["old"].status == RuleSetStatus.RETIRED
+
+ 
+class Validator:
+    def __init__(self):
+        self.called = False
+    def validate(self, rule_set_id):
+        self.called = True
+
+
+def test_activation_validates_before_status_change():
+    repo = Repo()
+    validator = Validator()
+    RuleSetVersionService(repo, validator).activate("new")
+    assert validator.called is True

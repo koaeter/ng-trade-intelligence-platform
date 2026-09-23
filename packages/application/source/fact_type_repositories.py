@@ -1,0 +1,9 @@
+from typing import Protocol
+
+from packages.domain.source.fact_type import FactType
+
+
+class FactTypeRepository(Protocol):
+    def add(self, fact_type: FactType) -> None: ...
+    def get(self, fact_type_id: str) -> FactType | None: ...
+    def get_by_code(self, code: str) -> FactType | None: ...

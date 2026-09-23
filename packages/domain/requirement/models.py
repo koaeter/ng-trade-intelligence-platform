@@ -15,6 +15,7 @@ class Requirement:
     origin_countries: frozenset[Country] = frozenset()
     destination_markets: frozenset[Market] = frozenset()
     evidence_ids: tuple[str, ...] = ()
+    scope_is_general: bool = False
 
     def is_effective_on(self, when: date) -> bool:
         return self.effective_from <= when and (

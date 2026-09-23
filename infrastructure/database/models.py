@@ -53,6 +53,7 @@ class RequirementModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     effective_from: Mapped[date] = mapped_column(Date, nullable=False)
     effective_to: Mapped[date | None] = mapped_column(Date)
+    scope_is_general: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class RequirementProductModel(Base):

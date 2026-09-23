@@ -75,7 +75,7 @@ class SqlAlchemyExportScenarioRepository(ExportScenarioRepository):
 class SqlAlchemyRequirementRepository(RequirementRepository):
     def __init__(self, session: Session) -> None: self._session = session
     def add(self, requirement: Requirement) -> None:
-        self._session.add(RequirementModel(id=requirement.id, name=requirement.name, effective_from=requirement.effective_from, effective_to=requirement.effective_to))
+        self._session.add(RequirementModel(id=requirement.id, name=requirement.name, effective_from=requirement.effective_from, effective_to=requirement.effective_to, scope_is_general=requirement.scope_is_general))
         for x in requirement.products: self._session.add(RequirementProductModel(requirement_id=requirement.id, product_id=x.id))
         for x in requirement.hs_codes: self._session.add(RequirementHSCodeModel(requirement_id=requirement.id, hs_version_id=x.version_id, hs_code=x.code))
         for x in requirement.origin_countries: self._session.add(RequirementOriginCountryModel(requirement_id=requirement.id, country_code=x.code))
@@ -92,7 +92,7 @@ class SqlAlchemyRequirementRepository(RequirementRepository):
         hs_values = frozenset(HSCode(x.version_id, x.code, x.description) for x in (self._session.get(HSCodeModel, (x.hs_version_id, x.hs_code)) for x in hs_rows) if x)
         country_values = frozenset(Country(x.code, x.name) for x in countries if x)
         market_values = frozenset(Market(x.code, x.name, x.country_code) for x in markets if x)
-        return Requirement(row.id, row.name, row.effective_from, row.effective_to, product_values, hs_values, country_values, market_values, tuple(evidence))
+        return Requirement(row.id, row.name, row.effective_from, row.effective_to, product_values, hs_values, country_values, market_values, tuple(evidence), row.scope_is_general)
     def get(self, requirement_id: str) -> Requirement | None:
         row = self._session.get(RequirementModel, requirement_id)
         return None if row is None else self._map(row)

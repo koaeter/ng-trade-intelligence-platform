@@ -19,7 +19,7 @@ def verified_evidence() -> Evidence:
 
 
 def test_active_requirement_without_evidence_is_insufficient() -> None:
-    result = evaluate_requirement(scenario(), Requirement("req-1", "Sample", date(2026, 1, 1)))
+    result = evaluate_requirement(scenario(), Requirement("req-1", "Sample", date(2026, 1, 1), scope_is_general=True))
     assert result.result == EvaluationResult.INSUFFICIENT_EVIDENCE
 
 
@@ -44,7 +44,7 @@ def test_non_matching_scope_is_not_applicable() -> None:
 
 def test_unverified_evidence_is_unresolved() -> None:
     evidence = Evidence("ev-1", "PROVISION", "src-1", "doc-1#p1", "Requirement evidence", False)
-    result = evaluate_requirement(scenario(), Requirement("req-1", "Sample", date(2026, 1, 1)), (evidence,))
+    result = evaluate_requirement(scenario(), Requirement("req-1", "Sample", date(2026, 1, 1), scope_is_general=True), (evidence,))
     assert result.result == EvaluationResult.UNRESOLVED
 
 

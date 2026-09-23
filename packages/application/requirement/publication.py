@@ -96,6 +96,7 @@ class RequirementPublicationService:
             origin_countries=frozenset(countries),
             destination_markets=frozenset(markets),
             evidence_ids=tuple(decision.evidence_ids),
+            scope_is_general=decision.general_scope_confirmed,
         )
         self.requirements.add(requirement)
         self.candidates.set_status(candidate.id, RequirementCandidateStatus.ACCEPTED)

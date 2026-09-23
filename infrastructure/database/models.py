@@ -237,3 +237,16 @@ class RequirementConditionCandidateModel(Base):
     field: Mapped[str] = mapped_column(String(64), nullable=False)
     operator: Mapped[str] = mapped_column(String(64), nullable=False)
     value: Mapped[str | None] = mapped_column(Text)
+
+ 
+class RequirementRuleNodeModel(Base):
+    __tablename__ = "requirement_rule_nodes"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("requirement_rule_nodes.id", ondelete="CASCADE"), nullable=True, index=True)
+    sequence: Mapped[int] = mapped_column(nullable=False)
+    node_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    group_operator: Mapped[str | None] = mapped_column(String(16))
+    field: Mapped[str | None] = mapped_column(String(64))
+    operator: Mapped[str | None] = mapped_column(String(64))
+    value: Mapped[str | None] = mapped_column(Text)

@@ -415,3 +415,52 @@ class SqlAlchemyRequirementConditionCandidateRepository:
             )
             for row in rows
         ]
+
+ 
+class SqlAlchemyRequirementRuleNodeRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, node) -> None:
+        from packages.domain.requirement.rule_nodes import RequirementRuleNodeType
+        if node.node_type == RequirementRuleNodeType.GROUP:
+            field = operator = None
+        else:
+            field = node.field.value if node.field else None
+            operator = node.operator.value if node.operator else None
+        self._session.add(RequirementRuleNodeModel(
+            id=node.id,
+            requirement_id=node.requirement_id,
+            parent_id=node.parent_id,
+            sequence=node.sequence,
+            node_type=node.node_type.value,
+            group_operator=node.group_operator.value if node.group_operator else None,
+            field=field,
+            operator=operator,
+            value=node.value,
+        ))
+        self._session.flush()
+
+    def list_for_requirement(self, requirement_id: str):
+        from packages.domain.requirement.conditions import RequirementConditionField, RequirementConditionOperator
+        from packages.domain.requirement.rule_nodes import RequirementRuleNode, RequirementRuleNodeType
+        from packages.domain.requirement.rule_tree import ConditionGroupOperator
+        rows = self._session.scalars(
+            select(RequirementRuleNodeModel)
+            .where(RequirementRuleNodeModel.requirement_id == requirement_id)
+            .order_by(RequirementRuleNodeModel.parent_id, RequirementRuleNodeModel.sequence)
+        ).all()
+        return [
+            RequirementRuleNode(
+                row.id,
+                row.requirement_id,
+                row.parent_id,
+                row.sequence,
+                RequirementRuleNodeType(row.node_type),
+                ConditionGroupOperator(row.group_operator) if row.group_operator else None,
+                RequirementConditionField(row.field) if row.field else None,
+                RequirementConditionOperator(row.operator) if row.operator else None,
+                row.value,
+            )
+            for row in rows
+        ]

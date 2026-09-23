@@ -540,3 +540,30 @@ class SqlAlchemyRuleSetVersionRepository:
             raise ValueError("Rule-set version does not exist")
         row.status = status.value
         self._session.flush()
+
+ 
+class SqlAlchemyRuleSetMembershipRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, membership) -> None:
+        self._session.add(RuleSetRequirementMembershipModel(
+            rule_set_id=membership.rule_set_id,
+            requirement_id=membership.requirement_id,
+            requirement_revision=membership.requirement_revision,
+        ))
+        self._session.flush()
+
+    def list_for_rule_set(self, rule_set_id: str):
+        from packages.domain.requirement.rule_set_membership import RuleSetRequirementMembership
+        rows = self._session.scalars(
+            select(RuleSetRequirementMembershipModel)
+            .where(RuleSetRequirementMembershipModel.rule_set_id == rule_set_id)
+            .order_by(RuleSetRequirementMembershipModel.requirement_id)
+        ).all()
+        return [
+            RuleSetRequirementMembership(
+                row.rule_set_id, row.requirement_id, row.requirement_revision
+            )
+            for row in rows
+        ]

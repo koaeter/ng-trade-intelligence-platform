@@ -272,3 +272,10 @@ class RuleSetVersionModel(Base):
     version: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+ 
+class RuleSetRequirementMembershipModel(Base):
+    __tablename__ = "rule_set_requirement_memberships"
+    rule_set_id: Mapped[str] = mapped_column(String(64), ForeignKey("rule_set_versions.id", ondelete="CASCADE"), primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
+    requirement_revision: Mapped[str] = mapped_column(String(64), nullable=False)

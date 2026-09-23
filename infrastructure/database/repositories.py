@@ -470,6 +470,29 @@ class SqlAlchemyRequirementRuleNodeRepository:
         ]
 
  
+    def list_for_revision(self, requirement_revision_id: str):
+        from packages.domain.requirement.conditions import RequirementConditionField, RequirementConditionOperator
+        from packages.domain.requirement.rule_nodes import RequirementRuleNode, RequirementRuleNodeType
+        from packages.domain.requirement.rule_tree import ConditionGroupOperator
+        rows = self._session.scalars(
+            select(RequirementRuleNodeModel)
+            .where(RequirementRuleNodeModel.requirement_revision_id == requirement_revision_id)
+            .order_by(RequirementRuleNodeModel.parent_id, RequirementRuleNodeModel.sequence)
+        ).all()
+        if any(row.requirement_revision_id is None for row in rows):
+            raise ValueError("Requirement rule node is not bound to a revision")
+        return [
+            RequirementRuleNode(
+                row.id, row.requirement_id, row.requirement_revision_id, row.parent_id,
+                row.sequence, RequirementRuleNodeType(row.node_type),
+                ConditionGroupOperator(row.group_operator) if row.group_operator else None,
+                RequirementConditionField(row.field) if row.field else None,
+                RequirementConditionOperator(row.operator) if row.operator else None,
+                row.value,
+            )
+            for row in rows
+        ]
+
 class SqlAlchemyApplicabilityTraceRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -618,3 +641,4 @@ class SqlAlchemyRequirementRevisionRepository:
             tuple(row.evidence_ids),
             row.scope_is_general,
         )
+

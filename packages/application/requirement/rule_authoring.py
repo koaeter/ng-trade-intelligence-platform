@@ -24,10 +24,14 @@ class RequirementRuleAuthoringService:
             for item in memberships
         ):
             raise ValueError("Requirement revision is not a member of the rule set")
+        if self.rule_nodes.list_for_revision(revision_id):
+            raise ValueError(
+                "Requirement revision already has a rule tree; create a new revision to change it"
+            )
 
         nodes: list[RequirementRuleNode] = []
 
-        def visit(node: ConditionNode, parent_id: str | None, sequence: int) -> str:
+        def visit(node: ConditionNode, parent_id: str | None, sequence: int) -> None:
             node_id = str(uuid4())
             if isinstance(node, ConditionLeaf):
                 candidate: RequirementConditionCandidate = node.condition
@@ -44,7 +48,7 @@ class RequirementRuleAuthoringService:
                 )
                 nodes.append(record)
                 self.rule_nodes.add(record)
-                return node_id
+                return
 
             record = RequirementRuleNode(
                 node_id,
@@ -59,7 +63,6 @@ class RequirementRuleAuthoringService:
             self.rule_nodes.add(record)
             for child_sequence, child in enumerate(node.children):
                 visit(child, node_id, child_sequence)
-            return node_id
 
         visit(tree, None, 0)
         return nodes

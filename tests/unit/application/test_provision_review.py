@@ -54,7 +54,7 @@ def test_accepted_candidate_becomes_provision():
     provision = service.review(
         ProvisionReviewDecision(
             "candidate-1", "reviewer-1", ProvisionCandidateStatus.ACCEPTED,
-            "CERTIFICATE_REQUIREMENT",
+            "DOCUMENT_REQUIREMENT",
         )
     )
 
@@ -79,3 +79,19 @@ def test_rejected_candidate_does_not_become_provision():
     assert provision is None
     assert provisions.items == []
     assert candidates.status == ProvisionCandidateStatus.REJECTED
+
+
+def test_accepted_candidate_rejects_unknown_provision_type():
+    candidates = Candidates(candidate())
+    service = ProvisionReviewService(candidates, Provisions(), Reviews())
+
+    try:
+        service.review(
+            ProvisionReviewDecision(
+                "candidate-1", "reviewer-1", ProvisionCandidateStatus.ACCEPTED,
+                "MADE_UP_TYPE",
+            )
+        )
+        assert False, "expected ValueError"
+    except ValueError as exc:
+        assert "controlled provision type" in str(exc)

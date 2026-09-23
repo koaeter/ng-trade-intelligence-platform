@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from packages.domain.source.models import Provision
-from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
+from packages.domain.source.provision_candidates import ProvisionCandidateStatus
+from packages.domain.source.provision_types import ProvisionType
 
 
 @dataclass(frozen=True)
@@ -51,9 +52,11 @@ class ProvisionReviewService:
             self.candidates.set_status(candidate.id, ProvisionCandidateStatus.REVIEWED)
             return None
 
-        provision_type = (decision.provision_type or "").strip()
-        if not provision_type:
-            raise ValueError("Accepted provision requires a provision type")
+        provision_type = (decision.provision_type or "").strip().upper()
+        try:
+            ProvisionType(provision_type)
+        except ValueError as exc:
+            raise ValueError("Accepted provision requires a controlled provision type") from exc
 
         provision = Provision(
             id=str(uuid4()),

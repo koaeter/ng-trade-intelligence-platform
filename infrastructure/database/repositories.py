@@ -515,6 +515,13 @@ class SqlAlchemyRuleSetVersionRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def get(self, version_id: str):
+        from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
+        row = self._session.get(RuleSetVersionModel, version_id)
+        return None if row is None else RuleSetVersion(
+            row.id, row.version, RuleSetStatus(row.status), row.created_at
+        )
+
     def get_active(self):
         from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
         rows = self._session.scalars(
@@ -526,3 +533,10 @@ class SqlAlchemyRuleSetVersionRepository:
             return None
         row = rows[0]
         return RuleSetVersion(row.id, row.version, RuleSetStatus(row.status), row.created_at)
+
+    def set_status(self, version_id: str, status) -> None:
+        row = self._session.get(RuleSetVersionModel, version_id)
+        if row is None:
+            raise ValueError("Rule-set version does not exist")
+        row.status = status.value
+        self._session.flush()

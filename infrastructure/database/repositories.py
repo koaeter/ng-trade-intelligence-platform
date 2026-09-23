@@ -519,6 +519,15 @@ class SqlAlchemyRuleSetVersionRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def add(self, version) -> None:
+        self._session.add(RuleSetVersionModel(
+            id=version.id,
+            version=version.version,
+            status=version.status.value,
+            created_at=version.created_at,
+        ))
+        self._session.flush()
+
     def get(self, version_id: str):
         from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
         row = self._session.get(RuleSetVersionModel, version_id)

@@ -41,27 +41,34 @@ class SourceIngestionService:
             mime_type=mime,
             acquisition_event_id=acquisition_event_id,
         )
-        if acquisition_event_id and self.acquisition_events is not None:
-            event = self.acquisition_events.get(acquisition_event_id)
-            if event is None:
-                raise ValueError("Acquisition event does not exist")
-            from packages.domain.source.acquisition import AcquisitionEventStatus
-            if event.source_id != source_id:
-                raise ValueError("Acquisition event belongs to a different source")
-            if event.status is not AcquisitionEventStatus.SUCCEEDED:
-                raise ValueError("Only successful acquisition events can be linked to artifacts")
-            if event.response_sha256 != artifact.checksum_sha256:
-                raise ValueError("Acquisition response checksum does not match persisted artifact")
-        self.artifacts.add(artifact)
-        if acquisition_event_id and self.acquisition_events is not None:
-            self.acquisition_events.link_artifact(acquisition_event_id, artifact_id)
-        source = self.sources.get(source_id)
-        if source is not None:
-            from packages.application.source.lifecycle import SourceLifecycleService
-            from packages.domain.source.models import SourceStatus
-            if source.status == SourceStatus.DISCOVERED:
-                self.sources.update(SourceLifecycleService().transition(source, SourceStatus.ACQUIRED))
-        return artifact
+        try:
+            if acquisition_event_id and self.acquisition_events is not None:
+                event = self.acquisition_events.get(acquisition_event_id)
+                if event is None:
+                    raise ValueError("Acquisition event does not exist")
+                from packages.domain.source.acquisition import AcquisitionEventStatus
+                if event.source_id != source_id:
+                    raise ValueError("Acquisition event belongs to a different source")
+                if event.status is not AcquisitionEventStatus.SUCCEEDED:
+                    raise ValueError("Only successful acquisition events can be linked to artifacts")
+                if event.response_sha256 != artifact.checksum_sha256:
+                    raise ValueError("Acquisition response checksum does not match persisted artifact")
+            self.artifacts.add(artifact)
+            if acquisition_event_id and self.acquisition_events is not None:
+                self.acquisition_events.link_artifact(acquisition_event_id, artifact_id)
+            source = self.sources.get(source_id)
+            if source is not None:
+                from packages.application.source.lifecycle import SourceLifecycleService
+                from packages.domain.source.models import SourceStatus
+                if source.status == SourceStatus.DISCOVERED:
+                    self.sources.update(SourceLifecycleService().transition(source, SourceStatus.ACQUIRED))
+            return artifact
+        except Exception:
+            try:
+                self.acquisition.storage.delete(acquired.storage_key)
+            except Exception:
+                pass
+            raise
 
 
 def _bytes(value: bytes):

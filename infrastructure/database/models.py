@@ -250,3 +250,17 @@ class RequirementRuleNodeModel(Base):
     field: Mapped[str | None] = mapped_column(String(64))
     operator: Mapped[str | None] = mapped_column(String(64))
     value: Mapped[str | None] = mapped_column(Text)
+
+ 
+class ApplicabilityEvaluationTraceModel(Base):
+    __tablename__ = "applicability_evaluation_traces"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    scenario_id: Mapped[str] = mapped_column(String(64), ForeignKey("export_scenarios.id"), nullable=False, index=True)
+    requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), nullable=False, index=True)
+    rule_set_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    scenario_date: Mapped[date] = mapped_column(Date, nullable=False)
+    temporal_result: Mapped[str] = mapped_column(String(16), nullable=False)
+    scope_result: Mapped[str] = mapped_column(String(16), nullable=False)
+    condition_result: Mapped[str] = mapped_column(String(16), nullable=False)
+    evidence_result: Mapped[str] = mapped_column(String(32), nullable=False)
+    final_result: Mapped[str] = mapped_column(String(32), nullable=False)

@@ -464,3 +464,48 @@ class SqlAlchemyRequirementRuleNodeRepository:
             )
             for row in rows
         ]
+
+ 
+class SqlAlchemyApplicabilityTraceRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, trace, rule_set_version: str) -> None:
+        from packages.domain.requirement.evaluation import TruthValue
+        from packages.domain.scenario.models import EvaluationResult
+        self._session.add(ApplicabilityEvaluationTraceModel(
+            id=str(uuid4()),
+            scenario_id=trace.scenario_id,
+            requirement_id=trace.requirement_id,
+            rule_set_version=rule_set_version,
+            scenario_date=trace.scenario_date,
+            temporal_result=trace.temporal_result.value,
+            scope_result=trace.scope_result.value,
+            condition_result=trace.condition_result.value,
+            evidence_result=trace.evidence_result.value,
+            final_result=trace.final_result.value,
+        ))
+        self._session.flush()
+
+    def list_for_scenario(self, scenario_id: str):
+        from packages.domain.requirement.evaluation import TruthValue
+        from packages.domain.scenario.applicability_trace import ApplicabilityTrace
+        from packages.domain.scenario.models import EvaluationResult
+        rows = self._session.scalars(
+            select(ApplicabilityEvaluationTraceModel)
+            .where(ApplicabilityEvaluationTraceModel.scenario_id == scenario_id)
+            .order_by(ApplicabilityEvaluationTraceModel.id)
+        ).all()
+        return [
+            ApplicabilityTrace(
+                row.scenario_id,
+                row.requirement_id,
+                row.scenario_date,
+                TruthValue(row.temporal_result),
+                TruthValue(row.scope_result),
+                TruthValue(row.condition_result),
+                EvaluationResult(row.evidence_result),
+                EvaluationResult(row.final_result),
+            )
+            for row in rows
+        ]

@@ -7,9 +7,10 @@ from packages.domain.source.artifacts import ArtifactKind, SourceArtifact
 
 
 class SourceIngestionService:
-    def __init__(self, acquisition: ArtifactAcquisitionService, artifacts) -> None:
+    def __init__(self, acquisition: ArtifactAcquisitionService, artifacts, sources) -> None:
         self.acquisition = acquisition
         self.artifacts = artifacts
+        self.sources = sources
 
     def ingest(
         self,
@@ -38,6 +39,14 @@ class SourceIngestionService:
             mime_type=mime,
         )
         self.artifacts.add(artifact)
+        source = self.sources.get(source_id)
+        if source is not None:
+            from packages.application.source.lifecycle import SourceLifecycleService
+            from packages.domain.source.models import SourceStatus
+            if source.status == SourceStatus.DISCOVERED:
+                self.sources.update(
+                    SourceLifecycleService().transition(source, SourceStatus.ACQUIRED)
+                )
         return artifact
 
 

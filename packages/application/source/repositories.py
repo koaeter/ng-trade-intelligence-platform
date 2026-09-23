@@ -8,6 +8,8 @@ class SourceRepository(ABC):
     def add(self, source: Source) -> None: raise NotImplementedError
     @abstractmethod
     def get(self, source_id: str) -> Source | None: raise NotImplementedError
+    @abstractmethod
+    def update(self, source: Source) -> None: raise NotImplementedError
 
 
 class DocumentRepository(ABC):

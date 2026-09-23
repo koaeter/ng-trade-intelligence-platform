@@ -122,6 +122,18 @@ class SqlAlchemyApplicabilityEvaluationRepository(ApplicabilityEvaluationReposit
 
 class SqlAlchemySourceRepository(SourceRepository):
     def __init__(self, session: Session) -> None: self._session = session
+    def update(self, source: Source) -> None:
+        row = self._session.get(SourceModel, source.id)
+        if row is None:
+            raise ValueError("Source does not exist")
+        row.name = source.name
+        row.organization = source.organization
+        row.source_type = source.source_type
+        row.jurisdiction = source.jurisdiction
+        row.official_url = source.official_url
+        row.status = source.status.value
+        self._session.flush()
+
     def add(self, source: Source) -> None:
         self._session.add(SourceModel(id=source.id, name=source.name, organization=source.organization, source_type=source.source_type, jurisdiction=source.jurisdiction, official_url=source.official_url, status=source.status.value))
         self._session.flush()

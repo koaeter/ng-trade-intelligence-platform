@@ -27,6 +27,7 @@ from packages.application.scenarios.services import create_scenario, evaluate_sc
 from packages.application.source.register_source import RegisterSourceFromEndpoint
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
+from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source

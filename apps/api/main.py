@@ -22,6 +22,7 @@ from infrastructure.database.repositories import (
 from infrastructure.database.session import get_session
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
 from packages.application.source.register_source import RegisterSourceFromEndpoint
+from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -79,6 +80,25 @@ class ProvisionRequest(BaseModel):
     locator: str
     text: str = Field(min_length=1)
     provision_type: str
+
+
+class AcquisitionEventResponse(BaseModel):
+    id: str
+    source_id: str
+    endpoint_id: str | None
+    requested_url: str
+    retrieved_url: str | None
+    started_at: str
+    completed_at: str
+    status: str
+    http_status: int | None
+    content_type: str | None
+    content_length: int | None
+    response_sha256: str | None
+    user_agent: str | None
+    error_code: str | None
+    error_message: str | None
+    artifact_id: str | None
 
 
 class AuthorityEndpointResponse(BaseModel):
@@ -186,6 +206,36 @@ def create_source(payload: SourceRequest, session: Session = Depends(get_session
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     session.commit()
     return registered
+
+
+@app.get("/api/v1/sources/{source_id}/acquisition-events", response_model=list[AcquisitionEventResponse], tags=["sources"])
+def list_source_acquisition_events(source_id: str, session: Session = Depends(get_session)) -> list[AcquisitionEventResponse]:
+    if SqlAlchemySourceRepository(session).get(source_id) is None:
+        raise HTTPException(status_code=404, detail="Source not found")
+    events = GetSourceAcquisitionHistory(
+        __import__("infrastructure.database.repositories", fromlist=["SqlAlchemyAcquisitionEventRepository"]).SqlAlchemyAcquisitionEventRepository(session)
+    ).execute(source_id)
+    return [
+        AcquisitionEventResponse(
+            id=x.id,
+            source_id=x.source_id,
+            endpoint_id=x.endpoint_id,
+            requested_url=x.requested_url,
+            retrieved_url=x.retrieved_url,
+            started_at=x.started_at.isoformat(),
+            completed_at=x.completed_at.isoformat(),
+            status=x.status.value,
+            http_status=x.http_status,
+            content_type=x.content_type,
+            content_length=x.content_length,
+            response_sha256=x.response_sha256,
+            user_agent=x.user_agent,
+            error_code=x.error_code,
+            error_message=x.error_message,
+            artifact_id=x.artifact_id,
+        )
+        for x in events
+    ]
 
 
 @app.get("/api/v1/sources/{source_id}", tags=["sources"])

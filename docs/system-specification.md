@@ -558,3 +558,12 @@ The following remain intentionally open:
 This document is the master specification and will evolve as subsequent design passes are completed.
 
 Supporting documents should provide deeper detail without contradicting this specification.
+
+
+## Acquisition provenance
+
+Registered sources are connected to immutable operational acquisition events before their captured artifacts become evidence inputs:
+
+`Authority → AuthorityEndpoint → Source → AcquisitionEvent → SourceArtifact`
+
+An acquisition event records the retrieval attempt, endpoint provenance, timestamps, outcome, HTTP metadata, content length, response checksum, and bounded failure information. Successful acquisition may produce an artifact; failed acquisition remains auditable without an artifact. Acquisition provenance does not itself publish regulatory knowledge or establish legal authority.

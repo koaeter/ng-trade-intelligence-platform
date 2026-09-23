@@ -7,10 +7,11 @@ from packages.domain.source.artifacts import ArtifactKind, SourceArtifact
 
 
 class SourceIngestionService:
-    def __init__(self, acquisition: ArtifactAcquisitionService, artifacts, sources) -> None:
+    def __init__(self, acquisition: ArtifactAcquisitionService, artifacts, sources, acquisition_events=None) -> None:
         self.acquisition = acquisition
         self.artifacts = artifacts
         self.sources = sources
+        self.acquisition_events = acquisition_events
 
     def ingest(
         self,
@@ -18,6 +19,7 @@ class SourceIngestionService:
         document_id: str,
         storage_key: str,
         response: AcquiredSourceResponse,
+        acquisition_event_id: str | None = None,
     ) -> SourceArtifact:
         artifact_id = str(uuid4())
         acquired = self.acquisition.acquire(
@@ -37,16 +39,17 @@ class SourceIngestionService:
             checksum_sha256=acquired.checksum_sha256,
             acquired_at=datetime.now(timezone.utc),
             mime_type=mime,
+            acquisition_event_id=acquisition_event_id,
         )
         self.artifacts.add(artifact)
+        if acquisition_event_id and self.acquisition_events is not None:
+            self.acquisition_events.link_artifact(acquisition_event_id, artifact_id)
         source = self.sources.get(source_id)
         if source is not None:
             from packages.application.source.lifecycle import SourceLifecycleService
             from packages.domain.source.models import SourceStatus
             if source.status == SourceStatus.DISCOVERED:
-                self.sources.update(
-                    SourceLifecycleService().transition(source, SourceStatus.ACQUIRED)
-                )
+                self.sources.update(SourceLifecycleService().transition(source, SourceStatus.ACQUIRED))
         return artifact
 
 

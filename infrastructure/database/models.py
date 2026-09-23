@@ -81,6 +81,26 @@ class RequirementDestinationMarketModel(Base):
     market_code: Mapped[str] = mapped_column(String(64), ForeignKey("markets.code"), primary_key=True)
 
 
+class AcquisitionEventModel(Base):
+    __tablename__ = "acquisition_events"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False, index=True)
+    endpoint_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("authority_endpoints.id"))
+    requested_url: Mapped[str] = mapped_column(String(2000), nullable=False)
+    retrieved_url: Mapped[str | None] = mapped_column(String(2000))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    http_status: Mapped[int | None] = mapped_column()
+    content_type: Mapped[str | None] = mapped_column(String(255))
+    content_length: Mapped[int | None] = mapped_column()
+    response_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500))
+    error_code: Mapped[str | None] = mapped_column(String(128))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    artifact_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("source_artifacts.id"))
+
+
 class RequirementEvidenceModel(Base):
     __tablename__ = "requirement_evidence"
     requirement_id: Mapped[str] = mapped_column(String(64), ForeignKey("requirements.id"), primary_key=True)
@@ -137,6 +157,7 @@ class SourceArtifactModel(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False, index=True)
     document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    acquisition_event_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("acquisition_events.id"), index=True)
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
     storage_key: Mapped[str] = mapped_column(String(1000), nullable=False)
     checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)

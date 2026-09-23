@@ -41,16 +41,17 @@ class HTTPSourceFetcher:
         if address is not None and (address.is_private or address.is_loopback):
             raise ValueError("Private or loopback source addresses are not allowed")
 
-        request = Request(
-            url,
-            headers={"User-Agent": self.policy.user_agent, "Accept": "*/*"},
-            method="GET",
-        )
+        request = Request(url, headers={"User-Agent": self.policy.user_agent, "Accept": "*/*"}, method="GET")
         try:
             with self.opener.open(request, timeout=self.policy.timeout_seconds) as response:
                 body = _read_bounded(response, self.policy.max_response_bytes)
-                content_type = response.headers.get("Content-Type")
-                return AcquiredSourceResponse(url, content_type, body)
+                return AcquiredSourceResponse(
+                    url=url,
+                    content_type=response.headers.get("Content-Type"),
+                    body=body,
+                    http_status=getattr(response, "status", None),
+                    retrieved_url=response.geturl(),
+                )
         except ValueError:
             raise
         except Exception as exc:

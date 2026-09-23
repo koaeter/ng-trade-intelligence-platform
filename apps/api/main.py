@@ -81,6 +81,17 @@ class ProvisionRequest(BaseModel):
     provision_type: str
 
 
+class AuthorityEndpointResponse(BaseModel):
+    id: str
+    authority_id: str
+    url: str
+    endpoint_type: str
+    access_method: str
+    content_format: str
+    purpose: str | None
+    active: bool
+
+
 class EvidenceResponse(BaseModel):
     id: str
     evidence_type: str
@@ -135,6 +146,24 @@ def get_export_scenario_results(scenario_id: str, session: Session = Depends(get
         raise HTTPException(status_code=404, detail="Export scenario not found")
     evaluations = SqlAlchemyApplicabilityEvaluationRepository(session).list_for_scenario(scenario_id)
     return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
+
+
+@app.get("/api/v1/authorities/{authority_id}/endpoints", response_model=list[AuthorityEndpointResponse], tags=["sources"])
+def list_authority_endpoints(authority_id: str, session: Session = Depends(get_session)) -> list[AuthorityEndpointResponse]:
+    endpoints = SqlAlchemyAuthorityEndpointRepository(session).list_for_authority(authority_id)
+    return [
+        AuthorityEndpointResponse(
+            id=x.id,
+            authority_id=x.authority_id,
+            url=x.url,
+            endpoint_type=x.endpoint_type,
+            access_method=x.access_method,
+            content_format=x.content_format,
+            purpose=x.purpose,
+            active=x.active,
+        )
+        for x in endpoints
+    ]
 
 
 @app.post("/api/v1/sources", status_code=201, tags=["sources"])

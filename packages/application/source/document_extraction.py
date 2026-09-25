@@ -38,13 +38,23 @@ class ExtractionResult:
 class DocumentExtractor(Protocol):
     supported_kinds: frozenset[ArtifactKind]
 
-    def extract(self, content: BinaryIO, policy: ExtractionPolicy) -> ExtractionResult: ...
+    def extract(
+        self,
+        artifact: SourceArtifact,
+        content: BinaryIO,
+        policy: ExtractionPolicy,
+    ) -> ExtractionResult: ...
 
 
 class TextExtractor:
     supported_kinds = frozenset({ArtifactKind.TEXT, ArtifactKind.HTML, ArtifactKind.CSV})
 
-    def extract(self, content: BinaryIO, policy: ExtractionPolicy) -> ExtractionResult:
+    def extract(
+        self,
+        artifact: SourceArtifact,
+        content: BinaryIO,
+        policy: ExtractionPolicy,
+    ) -> ExtractionResult:
         data = _read_bounded(content, policy.max_input_bytes)
         try:
             text = data.decode("utf-8")
@@ -53,9 +63,13 @@ class TextExtractor:
         if len(text) > policy.max_output_characters:
             raise ValueError("Extracted text exceeds configured maximum")
         lines = tuple(line.strip() for line in text.splitlines() if line.strip())
-        fragments = tuple(ExtractionFragment(line, locator=f"line={index}")
-                          for index, line in enumerate(lines, 1))
-        return ExtractionResult("", text, "utf8-text-extractor", "2", False, None, fragments)
+        fragments = tuple(
+            ExtractionFragment(line, locator=f"line={index}")
+            for index, line in enumerate(lines, 1)
+        )
+        return ExtractionResult(
+            artifact.id, text, "utf8-text-extractor", "2", False, None, fragments
+        )
 
 
 class ExtractedTextService:
@@ -73,7 +87,9 @@ class ExtractedTextService:
         if extractor is None:
             raise ValueError(f"No extractor registered for artifact kind: {artifact.kind.value}")
         with self.storage.get(artifact.storage_key) as content:
-            result = extractor.extract(content, self.policy)
+            result = extractor.extract(artifact, content, self.policy)
+        if result.artifact_id != artifact.id:
+            raise ValueError("Extractor returned an unexpected artifact ID")
         final = ExtractionResult(
             artifact.id, result.text, result.extractor, result.extractor_version,
             result.ocr_used, result.page_count, result.fragments,

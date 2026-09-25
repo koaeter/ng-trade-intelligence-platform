@@ -1,7 +1,6 @@
 from io import BytesIO
 
 import pytest
-from pypdf import PdfWriter
 
 from infrastructure.document_processing.html import HtmlDocumentExtractor
 from infrastructure.document_processing.pdf import PypdfDocumentExtractor
@@ -27,22 +26,38 @@ class Store:
 
 
 def make_pdf(*texts: str) -> bytes:
-    writer = PdfWriter()
-    for text in texts:
-        page = writer.add_blank_page(width=300, height=300)
-        page.merge_page(_text_page(text))
-    output = BytesIO()
-    writer.write(output)
-    return output.getvalue()
+    objects: list[bytes] = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 6 0 R >> >> /Contents 4 0 R >>",
+        b"",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 6 0 R >> >> /Contents 7 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"",
+    ]
+    streams = [
+        b"BT /F1 12 Tf 20 250 Td (" + texts[0].encode("latin-1") + b") Tj ET",
+        b"BT /F1 12 Tf 20 250 Td (" + texts[1].encode("latin-1") + b") Tj ET",
+    ]
+    objects[3] = b"<< /Length %d >>\nstream\n%s\nendstream" % (len(streams[0]), streams[0])
+    objects[6] = b"<< /Length %d >>\nstream\n%s\nendstream" % (len(streams[1]), streams[1])
 
-
-def _text_page(text: str):
-    writer = PdfWriter()
-    page = writer.add_blank_page(width=300, height=300)
-    page["/Contents"] = writer._add_object(
-        b"BT /F1 12 Tf 20 250 Td (" + text.encode("latin-1") + b") Tj ET"
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for number, obj in enumerate(objects, 1):
+        offsets.append(len(pdf))
+        pdf.extend(f"{number} 0 obj\n".encode())
+        pdf.extend(obj)
+        pdf.extend(b"\nendobj\n")
+    xref = len(pdf)
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode())
+    pdf.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n \n".encode())
+    pdf.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
     )
-    return page
+    return bytes(pdf)
 
 
 def test_pdf_extractor_reads_pages_and_locations() -> None:
@@ -53,6 +68,7 @@ def test_pdf_extractor_reads_pages_and_locations() -> None:
     assert result.page_count == 2
     assert result.artifact_id == "artifact-1"
     assert result.fragments[0].page_number == 1
+    assert result.fragments[0].text == "Nigeria trade"
     assert result.fragments[1].locator == "page=2"
 
 
@@ -65,7 +81,7 @@ def test_pdf_page_limit_is_enforced() -> None:
 
 
 def test_pdf_output_limit_is_enforced() -> None:
-    data = make_pdf("long text")
+    data = make_pdf("long text", "second")
     with pytest.raises(ValueError, match="maximum"):
         PypdfDocumentExtractor().extract(
             artifact(ArtifactKind.PDF), BytesIO(data), ExtractionPolicy(max_output_characters=2)
@@ -96,7 +112,8 @@ def test_html_output_limit_is_enforced() -> None:
 
 def test_extraction_service_routes_pdf_and_html_adapters() -> None:
     pdf_result = ExtractedTextService(
-        Store(make_pdf("PDF content")), [PypdfDocumentExtractor(), HtmlDocumentExtractor()]
+        Store(make_pdf("PDF content", "page two")),
+        [PypdfDocumentExtractor(), HtmlDocumentExtractor()],
     ).extract(artifact(ArtifactKind.PDF))
     assert pdf_result.extractor == "pypdf-extractor"
 

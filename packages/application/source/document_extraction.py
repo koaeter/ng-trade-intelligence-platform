@@ -142,7 +142,7 @@ class ExtractedTextService:
     def to_segments(result: ExtractionResult) -> tuple[ExtractionSegment, ...]:
         return tuple(
             ExtractionSegment(
-                id=f"{result.artifact_id}:segment:{index}",
+                id=f"{result.extraction_id or result.artifact_id}:segment:{index}",
                 artifact_id=result.artifact_id,
                 sequence=index,
                 text=fragment.text,

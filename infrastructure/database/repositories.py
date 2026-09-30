@@ -25,6 +25,7 @@ from packages.domain.source.provision_candidates import ProvisionCandidate, Prov
 
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
 from packages.domain.source.document_versions import DocumentVersion
+from packages.domain.source.document_relationships import DocumentRelationship, DocumentRelationshipType
 
 
 class SqlAlchemyProductRepository(ProductRepository):
@@ -153,6 +154,59 @@ class SqlAlchemyDocumentRepository(DocumentRepository):
     def get(self, document_id: str) -> Document | None:
         row = self._session.get(DocumentModel, document_id)
         return None if row is None else Document(row.id, row.source_id, row.title, row.document_type, row.publication_date, row.effective_from, row.effective_to, row.version_label)
+
+
+class SqlAlchemyDocumentRelationshipRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, relationship: DocumentRelationship) -> None:
+        self._session.add(DocumentRelationshipModel(
+            id=relationship.id,
+            relationship_type=relationship.relationship_type.value,
+            from_version_id=relationship.from_version_id,
+            to_version_id=relationship.to_version_id,
+            verified=relationship.verified,
+            evidence_reference=relationship.evidence_reference,
+            note=relationship.note,
+        ))
+        self._session.flush()
+
+    def get(self, relationship_id: str) -> DocumentRelationship | None:
+        row = self._session.get(DocumentRelationshipModel, relationship_id)
+        if row is None:
+            return None
+        return DocumentRelationship(
+            row.id,
+            DocumentRelationshipType(row.relationship_type),
+            row.from_version_id,
+            row.to_version_id,
+            row.verified,
+            row.evidence_reference,
+            row.note,
+        )
+
+    def list_for_version(self, version_id: str) -> list[DocumentRelationship]:
+        rows = self._session.scalars(
+            select(DocumentRelationshipModel)
+            .where(
+                (DocumentRelationshipModel.from_version_id == version_id)
+                | (DocumentRelationshipModel.to_version_id == version_id)
+            )
+            .order_by(DocumentRelationshipModel.id)
+        ).all()
+        return [
+            DocumentRelationship(
+                row.id,
+                DocumentRelationshipType(row.relationship_type),
+                row.from_version_id,
+                row.to_version_id,
+                row.verified,
+                row.evidence_reference,
+                row.note,
+            )
+            for row in rows
+        ]
 
 
 class SqlAlchemyDocumentVersionRepository:

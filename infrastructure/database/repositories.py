@@ -7,20 +7,20 @@ from infrastructure.database.models import (
     ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
-    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel, ProvisionCandidateModel,
+    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionRunModel, ExtractionSegmentModel, ProvisionCandidateModel,
     AcquisitionEventModel, DocumentVersionModel, DocumentRelationshipModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
 from packages.application.source.artifact_repositories import ExtractedTextRepository, SourceArtifactRepository
-from packages.application.source.extraction_repositories import ExtractionSegmentRepository
+from packages.application.source.extraction_repositories import ExtractionRunRepository, ExtractionSegmentRepository
 from packages.application.source.repositories import DocumentRepository, ProvisionRepository, SourceRepository
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
-from packages.domain.source.extraction import ExtractionSegment
+from packages.domain.source.extraction import ExtractionRun, ExtractionSegment
 from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
@@ -363,6 +363,49 @@ class SqlAlchemyExtractedTextRepository(ExtractedTextRepository):
         )
 
 
+class SqlAlchemyExtractionRunRepository(ExtractionRunRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, extraction: ExtractionRun) -> None:
+        self._session.add(ExtractionRunModel(
+            id=extraction.id,
+            artifact_id=extraction.artifact_id,
+            document_version_id=extraction.document_version_id,
+            input_checksum_sha256=extraction.input_checksum_sha256,
+            extractor=extraction.extractor,
+            extractor_version=extraction.extractor_version,
+            extracted_at=extraction.extracted_at,
+            ocr_used=extraction.ocr_used,
+        ))
+        self._session.flush()
+
+    def get(self, extraction_id: str) -> ExtractionRun | None:
+        row = self._session.get(ExtractionRunModel, extraction_id)
+        if row is None:
+            return None
+        return ExtractionRun(
+            row.id, row.artifact_id, row.document_version_id,
+            row.input_checksum_sha256, row.extractor, row.extractor_version,
+            row.extracted_at, row.ocr_used,
+        )
+
+    def list_for_artifact(self, artifact_id: str) -> list[ExtractionRun]:
+        rows = self._session.scalars(
+            select(ExtractionRunModel)
+            .where(ExtractionRunModel.artifact_id == artifact_id)
+            .order_by(ExtractionRunModel.extracted_at, ExtractionRunModel.id)
+        ).all()
+        return [
+            ExtractionRun(
+                row.id, row.artifact_id, row.document_version_id,
+                row.input_checksum_sha256, row.extractor, row.extractor_version,
+                row.extracted_at, row.ocr_used,
+            )
+            for row in rows
+        ]
+
+
 class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -371,6 +414,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
         self._session.add(ExtractionSegmentModel(
             id=segment.id,
             artifact_id=segment.artifact_id,
+            extraction_id=segment.extraction_id,
             sequence=segment.sequence,
             text=segment.text,
             page_number=segment.page_number,
@@ -391,10 +435,26 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             ExtractionSegment(
                 row.id, row.artifact_id, row.sequence, row.text,
                 row.page_number, row.section, row.source_start, row.source_end, row.locator,
+                row.extraction_id,
             )
             for row in rows
         ]
 
+
+    def list_for_extraction(self, extraction_id: str) -> list[ExtractionSegment]:
+        rows = self._session.scalars(
+            select(ExtractionSegmentModel)
+            .where(ExtractionSegmentModel.extraction_id == extraction_id)
+            .order_by(ExtractionSegmentModel.sequence)
+        ).all()
+        return [
+            ExtractionSegment(
+                row.id, row.artifact_id, row.sequence, row.text,
+                row.page_number, row.section, row.source_start, row.source_end,
+                row.locator, row.extraction_id,
+            )
+            for row in rows
+        ]
 
 class SqlAlchemyProvisionCandidateRepository:
     def __init__(self, session: Session) -> None:

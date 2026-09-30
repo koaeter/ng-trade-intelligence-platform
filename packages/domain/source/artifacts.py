@@ -33,6 +33,7 @@ class SourceArtifact:
     original_filename: str | None = None
     processing_state: ArtifactProcessingState = ArtifactProcessingState.ACQUIRED
     acquisition_event_id: str | None = None
+    document_version_id: str | None = None
 
 
 @dataclass(frozen=True)

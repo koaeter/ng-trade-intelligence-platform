@@ -8,7 +8,7 @@ from infrastructure.database.models import (
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
     RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel, ProvisionCandidateModel,
-    AcquisitionEventModel, DocumentVersionModel,
+    AcquisitionEventModel, DocumentVersionModel, DocumentRelationshipModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository

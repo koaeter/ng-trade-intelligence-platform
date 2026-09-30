@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import BinaryIO, Protocol
+from uuid import uuid4
 
 from packages.application.source.object_storage import ObjectStorage
 from packages.domain.source.artifacts import ArtifactKind, ExtractedText, SourceArtifact
-from packages.domain.source.extraction import ExtractionSegment
+from packages.domain.source.extraction import ExtractionRun, ExtractionSegment
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class ExtractionResult:
     ocr_used: bool
     page_count: int | None = None
     fragments: tuple[ExtractionFragment, ...] = ()
+    extraction_id: str | None = None
 
 
 class DocumentExtractor(Protocol):
@@ -93,6 +95,7 @@ class ExtractedTextService:
         final = ExtractionResult(
             artifact.id, result.text, result.extractor, result.extractor_version,
             result.ocr_used, result.page_count, result.fragments,
+            result.extraction_id or str(uuid4()),
         )
         if self.sources is not None:
             source = self.sources.get(artifact.source_id)
@@ -104,6 +107,24 @@ class ExtractedTextService:
                         SourceLifecycleService().transition(source, SourceStatus.EXTRACTED)
                     )
         return final
+
+    @staticmethod
+    def to_extraction_run(result: ExtractionResult, artifact: SourceArtifact) -> ExtractionRun:
+        if not result.extraction_id:
+            raise ValueError("Extraction result has no extraction ID")
+        if result.artifact_id != artifact.id:
+            raise ValueError("Extraction result does not match artifact")
+        from datetime import datetime, timezone
+        return ExtractionRun(
+            id=result.extraction_id,
+            artifact_id=artifact.id,
+            document_version_id=artifact.document_version_id,
+            input_checksum_sha256=artifact.checksum_sha256,
+            extractor=result.extractor,
+            extractor_version=result.extractor_version,
+            extracted_at=datetime.now(timezone.utc),
+            ocr_used=result.ocr_used,
+        )
 
     @staticmethod
     def to_domain(result: ExtractionResult) -> ExtractedText:
@@ -130,6 +151,7 @@ class ExtractedTextService:
                 source_start=None,
                 source_end=None,
                 locator=fragment.locator,
+                extraction_id=result.extraction_id,
             )
             for index, fragment in enumerate(result.fragments)
         )

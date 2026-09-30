@@ -16,7 +16,12 @@ def test_same_input_different_output():
     r = CompareExtractionRuns().execute(run("a","a"*64), run("b","a"*64), [seg("a1","one",1)], [seg("b1","changed",1)])
     assert r.result == ExtractionComparisonResult.SAME_INPUT_DIFFERENT_OUTPUT
 
-def test_different_input():
+def test_different_input_same_output():
+    r = CompareExtractionRuns().execute(run("a","a"*64), run("b","b"*64), [seg("a1","one",1)], [seg("b1","one",1)])
+    assert r.result == ExtractionComparisonResult.DIFFERENT_INPUT_SAME_OUTPUT
+
+
+def test_different_input_and_output():
     r = CompareExtractionRuns().execute(run("a","a"*64), run("b","b"*64), [seg("a1","one",1)], [seg("b1","two",1)])
     assert r.result == ExtractionComparisonResult.DIFFERENT_INPUT_DIFFERENT_OUTPUT
 

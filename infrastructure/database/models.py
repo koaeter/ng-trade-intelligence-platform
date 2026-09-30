@@ -152,11 +152,23 @@ class EvidenceModel(Base):
     provision_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("provisions.id"))
 
 
+class DocumentVersionModel(Base):
+    __tablename__ = "document_versions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    version_label: Mapped[str | None] = mapped_column(String(128))
+    publication_date: Mapped[date | None] = mapped_column(Date)
+    effective_from: Mapped[date | None] = mapped_column(Date)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    revision_reference: Mapped[str | None] = mapped_column(String(255))
+
+
 class SourceArtifactModel(Base):
     __tablename__ = "source_artifacts"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     source_id: Mapped[str] = mapped_column(String(64), ForeignKey("sources.id"), nullable=False, index=True)
     document_id: Mapped[str] = mapped_column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
+    document_version_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("document_versions.id"), nullable=True, index=True)
     acquisition_event_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("acquisition_events.id"), index=True)
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
     storage_key: Mapped[str] = mapped_column(String(1000), nullable=False)

@@ -24,14 +24,16 @@ class CompareExtractionRuns:
             raise ValueError("An extraction run cannot be compared with itself")
         if baseline.artifact_id != candidate.artifact_id:
             raise ValueError("Extraction runs must belong to the same artifact")
-        if baseline.input_checksum_sha256 != candidate.input_checksum_sha256:
-            result = ExtractionComparisonResult.DIFFERENT_INPUT_DIFFERENT_OUTPUT
+        same_input = baseline.input_checksum_sha256 == candidate.input_checksum_sha256
+        same_output = self._output_hash(baseline_segments) == self._output_hash(candidate_segments)
+        if same_input and same_output:
+            result = ExtractionComparisonResult.SAME_INPUT_SAME_OUTPUT
+        elif same_input:
+            result = ExtractionComparisonResult.SAME_INPUT_DIFFERENT_OUTPUT
+        elif same_output:
+            result = ExtractionComparisonResult.DIFFERENT_INPUT_SAME_OUTPUT
         else:
-            result = (
-                ExtractionComparisonResult.SAME_INPUT_SAME_OUTPUT
-                if self._output_hash(baseline_segments) == self._output_hash(candidate_segments)
-                else ExtractionComparisonResult.SAME_INPUT_DIFFERENT_OUTPUT
-            )
+            result = ExtractionComparisonResult.DIFFERENT_INPUT_DIFFERENT_OUTPUT
         return ExtractionComparison(
             id=str(uuid4()),
             baseline_extraction_id=baseline.id,

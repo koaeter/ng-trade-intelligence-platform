@@ -27,8 +27,14 @@ def upgrade() -> None:
     op.create_index("ix_extraction_comparisons_baseline", "extraction_comparisons", ["baseline_extraction_id"])
     op.create_index("ix_extraction_comparisons_candidate", "extraction_comparisons", ["candidate_extraction_id"])
     op.create_index("ix_extraction_comparisons_result", "extraction_comparisons", ["result"])
+    op.create_unique_constraint(
+        "uq_extraction_comparison_pair",
+        "extraction_comparisons",
+        ["baseline_extraction_id", "candidate_extraction_id"],
+    )
 
 def downgrade() -> None:
+    op.drop_constraint("uq_extraction_comparison_pair", "extraction_comparisons", type_="unique")
     op.drop_index("ix_extraction_comparisons_result", table_name="extraction_comparisons")
     op.drop_index("ix_extraction_comparisons_candidate", table_name="extraction_comparisons")
     op.drop_index("ix_extraction_comparisons_baseline", table_name="extraction_comparisons")

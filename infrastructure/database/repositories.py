@@ -7,20 +7,20 @@ from infrastructure.database.models import (
     ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
-    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionRunModel, ExtractionSegmentModel, ProvisionCandidateModel,
+    RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionRunModel, ExtractionComparisonModel, ExtractionSegmentModel, ProvisionCandidateModel,
     AcquisitionEventModel, DocumentVersionModel, DocumentRelationshipModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
 from packages.application.source.artifact_repositories import ExtractedTextRepository, SourceArtifactRepository
-from packages.application.source.extraction_repositories import ExtractionRunRepository, ExtractionSegmentRepository
+from packages.application.source.extraction_repositories import ExtractionComparisonRepository, ExtractionRunRepository, ExtractionSegmentRepository
 from packages.application.source.repositories import DocumentRepository, ProvisionRepository, SourceRepository
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
 from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
-from packages.domain.source.extraction import ExtractionRun, ExtractionSegment
+from packages.domain.source.extraction import ExtractionComparison, ExtractionComparisonResult, ExtractionRun, ExtractionSegment
 from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
@@ -360,6 +360,50 @@ class SqlAlchemyExtractedTextRepository(ExtractedTextRepository):
         return None if row is None else ExtractedText(
             row.artifact_id, row.text, row.extractor, row.extractor_version,
             row.extracted_at, row.ocr_used,
+        )
+
+
+class SqlAlchemyExtractionComparisonRepository(ExtractionComparisonRepository):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, comparison: ExtractionComparison) -> None:
+        if comparison.baseline_extraction_id == comparison.candidate_extraction_id:
+            raise ValueError("An extraction comparison cannot reference the same run twice")
+        self._session.add(ExtractionComparisonModel(
+            id=comparison.id,
+            baseline_extraction_id=comparison.baseline_extraction_id,
+            candidate_extraction_id=comparison.candidate_extraction_id,
+            baseline_input_checksum_sha256=comparison.baseline_input_checksum_sha256,
+            candidate_input_checksum_sha256=comparison.candidate_input_checksum_sha256,
+            baseline_output_sha256=comparison.baseline_output_sha256,
+            candidate_output_sha256=comparison.candidate_output_sha256,
+            result=comparison.result.value,
+            compared_at=comparison.compared_at,
+        ))
+        self._session.flush()
+
+    def get(self, comparison_id: str) -> ExtractionComparison | None:
+        row = self._session.get(ExtractionComparisonModel, comparison_id)
+        return None if row is None else ExtractionComparison(
+            row.id, row.baseline_extraction_id, row.candidate_extraction_id,
+            row.baseline_input_checksum_sha256, row.candidate_input_checksum_sha256,
+            row.baseline_output_sha256, row.candidate_output_sha256,
+            ExtractionComparisonResult(row.result), row.compared_at,
+        )
+
+    def find(self, baseline_extraction_id: str, candidate_extraction_id: str) -> ExtractionComparison | None:
+        row = self._session.scalars(
+            select(ExtractionComparisonModel).where(
+                ExtractionComparisonModel.baseline_extraction_id == baseline_extraction_id,
+                ExtractionComparisonModel.candidate_extraction_id == candidate_extraction_id,
+            )
+        ).first()
+        return None if row is None else ExtractionComparison(
+            row.id, row.baseline_extraction_id, row.candidate_extraction_id,
+            row.baseline_input_checksum_sha256, row.candidate_input_checksum_sha256,
+            row.baseline_output_sha256, row.candidate_output_sha256,
+            ExtractionComparisonResult(row.result), row.compared_at,
         )
 
 

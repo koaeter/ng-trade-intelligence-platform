@@ -163,6 +163,17 @@ class DocumentVersionModel(Base):
     revision_reference: Mapped[str | None] = mapped_column(String(255))
 
 
+class DocumentRelationshipModel(Base):
+    __tablename__ = "document_relationships"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    relationship_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    from_version_id: Mapped[str] = mapped_column(String(64), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False, index=True)
+    to_version_id: Mapped[str] = mapped_column(String(64), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False, index=True)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    evidence_reference: Mapped[str | None] = mapped_column(String(1000))
+    note: Mapped[str | None] = mapped_column(String(2000))
+
+
 class SourceArtifactModel(Base):
     __tablename__ = "source_artifacts"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

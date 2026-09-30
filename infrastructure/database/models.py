@@ -221,6 +221,19 @@ class ExtractionRunModel(Base):
     ocr_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
+class ExtractionComparisonModel(Base):
+    __tablename__ = "extraction_comparisons"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    baseline_extraction_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    candidate_extraction_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    baseline_input_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    candidate_input_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    baseline_output_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    candidate_output_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    result: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    compared_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class ExtractionSegmentModel(Base):
     __tablename__ = "extraction_segments"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

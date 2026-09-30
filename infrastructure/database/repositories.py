@@ -8,7 +8,7 @@ from infrastructure.database.models import (
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
     RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionSegmentModel, ProvisionCandidateModel,
-    AcquisitionEventModel,
+    AcquisitionEventModel, DocumentVersionModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
@@ -24,6 +24,7 @@ from packages.domain.source.extraction import ExtractionSegment
 from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
+from packages.domain.source.document_versions import DocumentVersion
 
 
 class SqlAlchemyProductRepository(ProductRepository):
@@ -154,6 +155,48 @@ class SqlAlchemyDocumentRepository(DocumentRepository):
         return None if row is None else Document(row.id, row.source_id, row.title, row.document_type, row.publication_date, row.effective_from, row.effective_to, row.version_label)
 
 
+class SqlAlchemyDocumentVersionRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, version: DocumentVersion) -> None:
+        self._session.add(DocumentVersionModel(
+            id=version.id,
+            document_id=version.document_id,
+            version_label=version.version_label,
+            publication_date=version.publication_date,
+            effective_from=version.effective_from,
+            effective_to=version.effective_to,
+            revision_reference=version.revision_reference,
+        ))
+        self._session.flush()
+
+    def get(self, version_id: str) -> DocumentVersion | None:
+        row = self._session.get(DocumentVersionModel, version_id)
+        if row is None:
+            return None
+        return DocumentVersion(
+            row.id, row.document_id, row.version_label,
+            row.publication_date, row.effective_from, row.effective_to,
+            row.revision_reference,
+        )
+
+    def list_for_document(self, document_id: str) -> list[DocumentVersion]:
+        rows = self._session.scalars(
+            select(DocumentVersionModel)
+            .where(DocumentVersionModel.document_id == document_id)
+            .order_by(DocumentVersionModel.effective_from, DocumentVersionModel.id)
+        ).all()
+        return [
+            DocumentVersion(
+                row.id, row.document_id, row.version_label,
+                row.publication_date, row.effective_from, row.effective_to,
+                row.revision_reference,
+            )
+            for row in rows
+        ]
+
+
 class SqlAlchemyProvisionRepository(ProvisionRepository):
     def __init__(self, session: Session) -> None: self._session = session
     def add(self, provision: Provision) -> None:
@@ -231,7 +274,7 @@ class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
     def add(self, artifact: SourceArtifact) -> None:
         self._session.add(SourceArtifactModel(
             id=artifact.id, source_id=artifact.source_id, document_id=artifact.document_id,
-            acquisition_event_id=artifact.acquisition_event_id,
+            acquisition_event_id=artifact.acquisition_event_id, document_version_id=artifact.document_version_id,
             kind=artifact.kind.value, storage_key=artifact.storage_key,
             checksum_sha256=artifact.checksum_sha256, acquired_at=artifact.acquired_at,
             mime_type=artifact.mime_type, original_filename=artifact.original_filename,
@@ -245,7 +288,7 @@ class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
             row.id, row.source_id, row.document_id, ArtifactKind(row.kind),
             row.storage_key, row.checksum_sha256, row.acquired_at,
             row.mime_type, row.original_filename, ArtifactProcessingState(row.processing_state),
-            row.acquisition_event_id,
+            row.acquisition_event_id, row.document_version_id,
         )
 
 

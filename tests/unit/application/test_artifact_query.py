@@ -1,8 +1,9 @@
+from datetime import datetime, timezone
+
 import pytest
 
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.domain.source.artifacts import ArtifactKind, SourceArtifact
-from datetime import datetime, timezone
 
 
 def artifact(artifact_id="artifact-1"):

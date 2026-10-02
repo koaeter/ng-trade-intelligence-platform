@@ -13,7 +13,10 @@ from infrastructure.database.models import (
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
 from packages.application.source.artifact_repositories import ExtractedTextRepository, SourceArtifactRepository
-from packages.application.source.extraction_repositories import ExtractionComparisonRepository, ExtractionRunRepository, ExtractionSegmentRepository
+from packages.application.source.extraction_repositories import (
+    ExtractionComparisonRepository, ExtractionRunRepository, ExtractionSegmentRepository,
+    ExtractionDiffRepository, ExtractionDiffEntryRepository,
+)
 from packages.application.source.repositories import DocumentRepository, ProvisionRepository, SourceRepository
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence

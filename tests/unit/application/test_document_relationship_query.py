@@ -1,5 +1,13 @@
-from packages.application.source.document_relationship_query import GetDocumentRelationship, ListDocumentRelationships
-from packages.domain.source.document_relationships import DocumentRelationship, DocumentRelationshipType
+import pytest
+
+from packages.application.source.document_relationship_query import (
+    GetDocumentRelationship,
+    ListDocumentRelationships,
+)
+from packages.domain.source.document_relationships import (
+    DocumentRelationship,
+    DocumentRelationshipType,
+)
 
 
 class MemoryRelationships:
@@ -14,7 +22,8 @@ class MemoryRelationships:
 
     def list_for_version(self, version_id):
         return [
-            value for value in self.items.values()
+            value
+            for value in self.items.values()
             if value.from_version_id == version_id or value.to_version_id == version_id
         ]
 
@@ -27,7 +36,6 @@ def test_get_document_relationship_returns_relationship():
 
 
 def test_get_document_relationship_rejects_missing_relationship():
-    import pytest
     with pytest.raises(ValueError, match="does not exist"):
         GetDocumentRelationship(MemoryRelationships()).execute("missing")
 

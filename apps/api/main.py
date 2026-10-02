@@ -34,6 +34,7 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
+from packages.application.source.extracted_text_query import GetExtractedText
 from packages.application.source.extraction_run_query import GetExtractionRun, ListExtractionRunsForArtifact
 from packages.application.source.extraction_segment_query import GetExtractionSegment, ListExtractionSegments
 from packages.domain.evidence.models import Evidence
@@ -131,6 +132,16 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+
+
+class ExtractedTextResponse(BaseModel):
+    artifact_id: str
+    text: str
+    extractor: str
+    extractor_version: str
+    extracted_at: str
+    ocr_used: bool
 
 
 class SourceArtifactResponse(BaseModel):
@@ -249,6 +260,18 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _extracted_text_response(extracted) -> ExtractedTextResponse:
+    return ExtractedTextResponse(
+        artifact_id=extracted.artifact_id,
+        text=extracted.text,
+        extractor=extracted.extractor,
+        extractor_version=extracted.extractor_version,
+        extracted_at=extracted.extracted_at.isoformat(),
+        ocr_used=extracted.ocr_used,
+    )
+
+
 def _source_artifact_response(artifact) -> SourceArtifactResponse:
     return SourceArtifactResponse(
         id=artifact.id,
@@ -350,6 +373,18 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+
+@app.get("/api/v1/source-artifacts/{artifact_id}/extracted-text", response_model=ExtractedTextResponse, tags=["extraction"])
+def get_extracted_text(artifact_id: str, session: Session = Depends(get_session)) -> ExtractedTextResponse:
+    try:
+        extracted = GetExtractedText(
+            SqlAlchemyExtractedTextRepository(session)
+        ).execute(artifact_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _extracted_text_response(extracted)
 
 
 @app.get("/api/v1/source-artifacts/{artifact_id}", response_model=SourceArtifactResponse, tags=["sources"])

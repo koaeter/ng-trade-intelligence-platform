@@ -12,18 +12,36 @@ class Item:
 
 class Memory:
     def __init__(self, items): self.items = items
-    def list_for_document(self, document_id):\n        return [x for x in self.items if x.document_id == document_id]
-    def list_for_document_version(self, version_id):\n        return [x for x in self.items if x.document_version_id == version_id]
-    def list_for_version(self, version_id):\n        return [\n            x for x in self.items\n            if x.from_version_id == version_id or x.to_version_id == version_id\n        ]
-    def list_for_artifact(self, artifact_id):\n        return [x for x in self.items if x.artifact_id == artifact_id]
-    def list_for_extraction(self, extraction_id):\n        return [\n            x for x in self.items\n            if getattr(x, "extraction_id", None) == extraction_id\n            or getattr(x, "baseline_extraction_id", None) == extraction_id\n            or getattr(x, "candidate_extraction_id", None) == extraction_id\n        ]
-    def list_for_comparison(self, comparison_id):\n        return [x for x in self.items if x.comparison_id == comparison_id]
+    def list_for_document(self, document_id):
+        return [x for x in self.items if x.document_id == document_id]
+    def list_for_document_version(self, version_id):
+        return [x for x in self.items if x.document_version_id == version_id]
+    def list_for_version(self, version_id):
+        return [
+            x for x in self.items
+            if x.from_version_id == version_id or x.to_version_id == version_id
+        ]
+    def list_for_artifact(self, artifact_id):
+        return [x for x in self.items if x.artifact_id == artifact_id]
+    def list_for_extraction(self, extraction_id):
+        return [
+            x for x in self.items
+            if getattr(x, "extraction_id", None) == extraction_id
+            or getattr(x, "baseline_extraction_id", None) == extraction_id
+            or getattr(x, "candidate_extraction_id", None) == extraction_id
+        ]
+    def list_for_comparison(self, comparison_id):
+        return [x for x in self.items if x.comparison_id == comparison_id]
     def list_for_diff(self, diff_id): return [x for x in self.items if x.diff_id == diff_id]
 
 
 def test_get_document_provenance_builds_complete_processing_chain():
     versions = [Item("v1", "document-1"), Item("v2", "document-1")]
-    artifacts = [\n        Item("a1", "document-1", "v1"),\n        Item("a2", "document-1", "v2"),\n        Item("a3", "document-1", "v1"),\n    ]
+    artifacts = [
+        Item("a1", "document-1", "v1"),
+        Item("a2", "document-1", "v2"),
+        Item("a3", "document-1", "v1"),
+    ]
     relationships = [Item("r1", from_version_id="v1", to_version_id="v2")]
     extractions = [Item("e1", artifact_id="a1")]
     segments = [Item("s1", extraction_id="e1")]

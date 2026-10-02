@@ -211,6 +211,7 @@ class DocumentProvenanceResponse(BaseModel):
     versions: list[DocumentVersionResponse]
     artifacts_by_version: dict[str, list[SourceArtifactResponse]]
     relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
+    extraction_runs_by_artifact: dict[str, list[ExtractionRunResponse]]
 
 
 class ExtractionSegmentResponse(BaseModel):
@@ -482,6 +483,7 @@ def get_document_provenance(
         SqlAlchemyDocumentVersionRepository(session),
         SqlAlchemySourceArtifactRepository(session),
         SqlAlchemyDocumentRelationshipRepository(session),
+        SqlAlchemyExtractionRunRepository(session),
     ).execute(document_id)
     return DocumentProvenanceResponse(
         document_id=document_id,
@@ -496,6 +498,13 @@ def get_document_provenance(
                 for relationship in relationships
             ]
             for version_id, relationships in view.relationships_by_version.items()
+        },
+        extraction_runs_by_artifact={
+            artifact_id: [
+                _extraction_run_response(extraction)
+                for extraction in extractions
+            ]
+            for artifact_id, extractions in view.extraction_runs_by_artifact.items()
         },
     )
 

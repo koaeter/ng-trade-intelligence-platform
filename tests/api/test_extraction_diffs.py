@@ -326,3 +326,24 @@ def test_get_source_artifact_returns_404(monkeypatch) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+
+class FakeRunListRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_artifact(self, artifact_id: str):
+        return [FakeRun()] if artifact_id == "artifact-1" else []
+
+
+def test_list_extraction_runs_for_artifact(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeRunListRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/source-artifacts/artifact-1/extraction-runs")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["id"] == "run-1"

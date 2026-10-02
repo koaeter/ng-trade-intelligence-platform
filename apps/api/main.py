@@ -31,6 +31,7 @@ from packages.application.source.register_source import RegisterSourceFromEndpoi
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
+from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extraction_run_query import GetExtractionRun
@@ -129,6 +130,22 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+
+
+class SourceArtifactResponse(BaseModel):
+    id: str
+    source_id: str
+    document_id: str
+    kind: str
+    storage_key: str
+    checksum_sha256: str
+    acquired_at: str
+    mime_type: str | None
+    original_filename: str | None
+    processing_state: str
+    acquisition_event_id: str | None
+    document_version_id: str | None
 
 
 class ExtractionSegmentResponse(BaseModel):
@@ -231,6 +248,24 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _source_artifact_response(artifact) -> SourceArtifactResponse:
+    return SourceArtifactResponse(
+        id=artifact.id,
+        source_id=artifact.source_id,
+        document_id=artifact.document_id,
+        kind=artifact.kind.value,
+        storage_key=artifact.storage_key,
+        checksum_sha256=artifact.checksum_sha256,
+        acquired_at=artifact.acquired_at.isoformat(),
+        mime_type=artifact.mime_type,
+        original_filename=artifact.original_filename,
+        processing_state=artifact.processing_state.value,
+        acquisition_event_id=artifact.acquisition_event_id,
+        document_version_id=artifact.document_version_id,
+    )
+
+
 def _extraction_segment_response(segment) -> ExtractionSegmentResponse:
     return ExtractionSegmentResponse(
         id=segment.id,
@@ -314,6 +349,18 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+
+@app.get("/api/v1/source-artifacts/{artifact_id}", response_model=SourceArtifactResponse, tags=["sources"])
+def get_source_artifact(artifact_id: str, session: Session = Depends(get_session)) -> SourceArtifactResponse:
+    try:
+        artifact = GetSourceArtifact(
+            SqlAlchemySourceArtifactRepository(session)
+        ).execute(artifact_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _source_artifact_response(artifact)
 
 
 @app.get("/api/v1/extraction-segments/{segment_id}", response_model=ExtractionSegmentResponse, tags=["extraction"])

@@ -155,6 +155,7 @@ class DocumentProvenanceResponse(BaseModel):
     document_id: str
     versions: list[DocumentVersionResponse]
     artifacts_by_version: dict[str, list[SourceArtifactResponse]]
+    relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
 
 
 class DocumentResponse(BaseModel):
@@ -480,6 +481,7 @@ def get_document_provenance(
     view = GetDocumentProvenance(
         SqlAlchemyDocumentVersionRepository(session),
         SqlAlchemySourceArtifactRepository(session),
+        SqlAlchemyDocumentRelationshipRepository(session),
     ).execute(document_id)
     return DocumentProvenanceResponse(
         document_id=document_id,
@@ -487,6 +489,13 @@ def get_document_provenance(
         artifacts_by_version={
             version_id: [_source_artifact_response(artifact) for artifact in artifacts]
             for version_id, artifacts in view.artifacts_by_version.items()
+        },
+        relationships_by_version={
+            version_id: [
+                _document_relationship_response(relationship)
+                for relationship in relationships
+            ]
+            for version_id, relationships in view.relationships_by_version.items()
         },
     )
 

@@ -391,3 +391,50 @@ def test_get_extracted_text_returns_404(monkeypatch) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+
+class FakeDocumentVersion:
+    id = "version-1"
+    document_id = "document-1"
+    version_label = "v1"
+    publication_date = date(2026, 10, 1)
+    effective_from = date(2026, 10, 2)
+    effective_to = None
+    revision_reference = "REV-1"
+
+
+class FakeDocumentVersionRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, version_id: str):
+        return FakeDocumentVersion() if version_id == "version-1" else None
+
+    def list_for_document(self, document_id: str):
+        return [FakeDocumentVersion()] if document_id == "document-1" else []
+
+
+def test_get_document_version(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyDocumentVersionRepository", FakeDocumentVersionRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/document-versions/version-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["version_label"] == "v1"
+
+
+def test_list_document_versions(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyDocumentVersionRepository", FakeDocumentVersionRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/documents/document-1/versions")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["id"] == "version-1"

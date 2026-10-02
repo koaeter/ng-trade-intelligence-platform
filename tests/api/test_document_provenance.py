@@ -250,7 +250,7 @@ class FakeProvenanceSummaryRepository:
 
 
 def test_get_document_provenance_summary(monkeypatch):
-    monkeypatch.setattr(api, "SqlAlchemyDocumentProvenanceSummaryRepository", FakeProvenanceSummaryRepository)
+    monkeypatch.setattr(\n        api,\n        "SqlAlchemyDocumentProvenanceSummaryRepository",\n        FakeProvenanceSummaryRepository,\n    )
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/document-1/provenance/summary")

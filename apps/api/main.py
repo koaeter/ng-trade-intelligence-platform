@@ -32,6 +32,7 @@ from packages.application.source.acquisition_history import GetSourceAcquisition
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
+from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -125,6 +126,19 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+class ExtractionComparisonResponse(BaseModel):
+    id: str
+    baseline_extraction_id: str
+    candidate_extraction_id: str
+    baseline_input_checksum_sha256: str
+    candidate_input_checksum_sha256: str
+    baseline_output_sha256: str
+    candidate_output_sha256: str
+    result: str
+    compared_at: str
+
+
 class ExtractionDiffEntryResponse(BaseModel):
     id: str
     diff_id: str
@@ -186,6 +200,21 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _extraction_comparison_response(comparison) -> ExtractionComparisonResponse:
+    return ExtractionComparisonResponse(
+        id=comparison.id,
+        baseline_extraction_id=comparison.baseline_extraction_id,
+        candidate_extraction_id=comparison.candidate_extraction_id,
+        baseline_input_checksum_sha256=comparison.baseline_input_checksum_sha256,
+        candidate_input_checksum_sha256=comparison.candidate_input_checksum_sha256,
+        baseline_output_sha256=comparison.baseline_output_sha256,
+        candidate_output_sha256=comparison.candidate_output_sha256,
+        result=comparison.result.value,
+        compared_at=comparison.compared_at.isoformat(),
+    )
+
+
 def _extraction_diff_entry_response(entry) -> ExtractionDiffEntryResponse:
     return ExtractionDiffEntryResponse(
         id=entry.id,
@@ -224,6 +253,18 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
         modified_count=diff.modified_count,
         created_at=diff.created_at.isoformat(),
     )
+
+
+
+@app.get("/api/v1/extraction-comparisons/{comparison_id}", response_model=ExtractionComparisonResponse, tags=["extraction"])
+def get_extraction_comparison(comparison_id: str, session: Session = Depends(get_session)) -> ExtractionComparisonResponse:
+    try:
+        comparison = GetExtractionComparison(
+            SqlAlchemyExtractionComparisonRepository(session)
+        ).execute(comparison_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _extraction_comparison_response(comparison)
 
 
 @app.get("/api/v1/extraction-diffs/{diff_id}", response_model=ExtractionDiffResponse, tags=["extraction"])

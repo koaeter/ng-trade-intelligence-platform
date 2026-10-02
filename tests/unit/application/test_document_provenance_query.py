@@ -16,6 +16,29 @@ class MemoryVersions:
         return [item for item in self.items if item.document_id == document_id]
 
 
+class MemoryDiffs:
+    def __init__(self, items):
+        self.items = items
+
+    def list_for_comparison(self, comparison_id):
+        return [
+            item for item in self.items if item.comparison_id == comparison_id
+        ]
+
+
+class MemoryComparisons:
+    def __init__(self, items):
+        self.items = items
+
+    def list_for_extraction(self, extraction_id):
+        return [
+            item
+            for item in self.items
+            if item.baseline_extraction_id == extraction_id
+            or item.candidate_extraction_id == extraction_id
+        ]
+
+
 class MemorySegments:
     def __init__(self, items):
         self.items = items
@@ -72,3 +95,5 @@ def test_get_document_provenance_groups_artifacts_by_version():
     assert [item.id for item in view.relationships_by_version["v2"]] == ["r1"]
     assert [item.id for item in view.extraction_runs_by_artifact["a1"]] == ["e1"]
     assert [item.id for item in view.segments_by_extraction["e1"]] == ["s1"]
+    assert [item.id for item in view.comparisons_by_extraction["e1"]] == ["c1"]
+    assert [item.id for item in view.diffs_by_comparison["c1"]] == ["d1"]

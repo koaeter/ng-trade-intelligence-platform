@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from packages.application.source.artifact_repositories import SourceArtifactRepository
-from packages.application.source.document_version_repositories import DocumentVersionRepository
+from packages.application.source.document_version_repositories import (
+    DocumentVersionRepository,
+)
 from packages.domain.source.artifacts import SourceArtifact
 from packages.domain.source.document_versions import DocumentVersion
 
@@ -29,4 +31,7 @@ class GetDocumentProvenance:
             version.id: tuple(self.artifacts.list_for_document_version(version.id))
             for version in versions
         }
-        return DocumentProvenance(versions=versions, artifacts_by_version=artifacts)
+        return DocumentProvenance(
+            versions=versions,
+            artifacts_by_version=artifacts,
+        )

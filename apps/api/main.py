@@ -27,6 +27,7 @@ from infrastructure.database.repositories import (
     SqlAlchemyExtractedTextRepository,
     SqlAlchemyExtractionRunRepository,
     SqlAlchemyExtractionSegmentRepository,
+    SqlAlchemyDocumentVersionRepository,
 )
 from infrastructure.database.session import get_session
 from infrastructure.acquisition.http import HTTPSourceFetcher
@@ -36,6 +37,7 @@ from packages.application.source.acquisition_history import GetSourceAcquisition
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.artifact_query import GetSourceArtifact
+from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extracted_text_query import GetExtractedText
@@ -137,6 +139,17 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+
+
+class DocumentVersionResponse(BaseModel):
+    id: str
+    document_id: str
+    version_label: str | None
+    publication_date: date | None
+    effective_from: date | None
+    effective_to: date | None
+    revision_reference: str | None
 
 
 class ExtractedTextResponse(BaseModel):
@@ -265,6 +278,19 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _document_version_response(version) -> DocumentVersionResponse:
+    return DocumentVersionResponse(
+        id=version.id,
+        document_id=version.document_id,
+        version_label=version.version_label,
+        publication_date=version.publication_date,
+        effective_from=version.effective_from,
+        effective_to=version.effective_to,
+        revision_reference=version.revision_reference,
+    )
+
+
 def _extracted_text_response(extracted) -> ExtractedTextResponse:
     return ExtractedTextResponse(
         artifact_id=extracted.artifact_id,
@@ -378,6 +404,26 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+
+@app.get("/api/v1/document-versions/{version_id}", response_model=DocumentVersionResponse, tags=["sources"])
+def get_document_version(version_id: str, session: Session = Depends(get_session)) -> DocumentVersionResponse:
+    try:
+        version = GetDocumentVersion(
+            SqlAlchemyDocumentVersionRepository(session)
+        ).execute(version_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _document_version_response(version)
+
+
+@app.get("/api/v1/documents/{document_id}/versions", response_model=list[DocumentVersionResponse], tags=["sources"])
+def list_document_versions(document_id: str, session: Session = Depends(get_session)) -> list[DocumentVersionResponse]:
+    versions = ListDocumentVersions(
+        SqlAlchemyDocumentVersionRepository(session)
+    ).execute(document_id)
+    return [_document_version_response(version) for version in versions]
 
 
 @app.get("/api/v1/source-artifacts/{artifact_id}/extracted-text", response_model=ExtractedTextResponse, tags=["extraction"])

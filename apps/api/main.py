@@ -34,6 +34,7 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extraction_run_query import GetExtractionRun
+from packages.application.source.extraction_segment_query import GetExtractionSegment, ListExtractionSegments
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -129,6 +130,20 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+class ExtractionSegmentResponse(BaseModel):
+    id: str
+    artifact_id: str
+    extraction_id: str | None
+    sequence: int
+    text: str
+    page_number: int | None
+    section: str | None
+    source_start: int | None
+    source_end: int | None
+    locator: str | None
+
+
 class ExtractionRunResponse(BaseModel):
     id: str
     artifact_id: str
@@ -215,6 +230,22 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _extraction_segment_response(segment) -> ExtractionSegmentResponse:
+    return ExtractionSegmentResponse(
+        id=segment.id,
+        artifact_id=segment.artifact_id,
+        extraction_id=segment.extraction_id,
+        sequence=segment.sequence,
+        text=segment.text,
+        page_number=segment.page_number,
+        section=segment.section,
+        source_start=segment.source_start,
+        source_end=segment.source_end,
+        locator=segment.locator,
+    )
+
+
 def _extraction_run_response(extraction) -> ExtractionRunResponse:
     return ExtractionRunResponse(
         id=extraction.id,
@@ -282,6 +313,26 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
     )
 
 
+
+
+
+@app.get("/api/v1/extraction-segments/{segment_id}", response_model=ExtractionSegmentResponse, tags=["extraction"])
+def get_extraction_segment(segment_id: str, session: Session = Depends(get_session)) -> ExtractionSegmentResponse:
+    try:
+        segment = GetExtractionSegment(
+            SqlAlchemyExtractionSegmentRepository(session)
+        ).execute(segment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _extraction_segment_response(segment)
+
+
+@app.get("/api/v1/extraction-runs/{extraction_id}/segments", response_model=list[ExtractionSegmentResponse], tags=["extraction"])
+def list_extraction_segments(extraction_id: str, session: Session = Depends(get_session)) -> list[ExtractionSegmentResponse]:
+    segments = ListExtractionSegments(
+        SqlAlchemyExtractionSegmentRepository(session)
+    ).execute(extraction_id)
+    return [_extraction_segment_response(segment) for segment in segments]
 
 
 @app.get("/api/v1/extraction-runs/{extraction_id}", response_model=ExtractionRunResponse, tags=["extraction"])

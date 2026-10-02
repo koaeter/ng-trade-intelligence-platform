@@ -37,6 +37,25 @@ class FakeArtifact:
     document_version_id = "version-1"
 
 
+class FakeExtraction:
+    id = "extraction-1"
+    artifact_id = "artifact-1"
+    document_version_id = "version-1"
+    input_checksum_sha256 = "checksum"
+    extractor = "extractor"
+    extractor_version = "1.0"
+    extracted_at = __import__("datetime").datetime(2026, 10, 2)
+    ocr_used = False
+
+
+class FakeExtractionRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_artifact(self, artifact_id):
+        return [FakeExtraction()] if artifact_id == "artifact-1" else []
+
+
 class FakeRelationship:
     id = "relationship-1"
     relationship_type = type("Type", (), {"value": "SUPERSEDES"})()
@@ -84,6 +103,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     monkeypatch.setattr(api, "SqlAlchemyDocumentVersionRepository", FakeVersionRepository)
     monkeypatch.setattr(api, "SqlAlchemySourceArtifactRepository", FakeArtifactRepository)
     monkeypatch.setattr(api, "SqlAlchemyDocumentRelationshipRepository", FakeRelationshipRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeExtractionRepository)
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/document-1/provenance")
@@ -95,6 +115,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     assert body["versions"][0]["id"] == "version-1"
     assert body["artifacts_by_version"]["version-1"][0]["id"] == "artifact-1"
     assert body["relationships_by_version"]["version-1"][0]["id"] == "relationship-1"
+    assert body["extraction_runs_by_artifact"]["artifact-1"][0]["id"] == "extraction-1"
 
 
 def test_get_document_provenance_returns_404_for_missing_document(monkeypatch):

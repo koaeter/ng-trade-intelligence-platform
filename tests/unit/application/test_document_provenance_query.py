@@ -29,6 +29,16 @@ class MemoryRelationships:
         ]
 
 
+class MemoryExtractions:
+    def __init__(self, items):
+        self.items = items
+
+    def list_for_artifact(self, artifact_id):
+        return [
+            item for item in self.items if item.artifact_id == artifact_id
+        ]
+
+
 class MemoryArtifacts:
     def __init__(self, items):
         self.items = items
@@ -50,3 +60,4 @@ def test_get_document_provenance_groups_artifacts_by_version():
     assert [item.id for item in view.artifacts_by_version["v2"]] == ["a2"]
     assert [item.id for item in view.relationships_by_version["v1"]] == ["r1"]
     assert [item.id for item in view.relationships_by_version["v2"]] == ["r1"]
+    assert [item.id for item in view.extraction_runs_by_artifact["a1"]] == ["e1"]

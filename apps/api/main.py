@@ -40,7 +40,10 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
-from packages.application.source.document_relationship_query import GetDocumentRelationship, ListDocumentRelationships
+from packages.application.source.document_relationship_query import (
+    GetDocumentRelationship,
+    ListDocumentRelationships,
+)
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extracted_text_query import GetExtractedText
@@ -471,7 +474,10 @@ def get_document(document_id: str, session: Session = Depends(get_session)) -> D
 
 
 @app.get("/api/v1/document-relationships/{relationship_id}", response_model=DocumentRelationshipResponse, tags=["sources"])
-def get_document_relationship(relationship_id: str, session: Session = Depends(get_session)) -> DocumentRelationshipResponse:
+def get_document_relationship(
+    relationship_id: str,
+    session: Session = Depends(get_session),
+) -> DocumentRelationshipResponse:
     try:
         relationship = GetDocumentRelationship(
             SqlAlchemyDocumentRelationshipRepository(session)
@@ -482,7 +488,10 @@ def get_document_relationship(relationship_id: str, session: Session = Depends(g
 
 
 @app.get("/api/v1/document-versions/{version_id}/relationships", response_model=list[DocumentRelationshipResponse], tags=["sources"])
-def list_document_relationships(version_id: str, session: Session = Depends(get_session)) -> list[DocumentRelationshipResponse]:
+def list_document_relationships(
+    version_id: str,
+    session: Session = Depends(get_session),
+) -> list[DocumentRelationshipResponse]:
     if SqlAlchemyDocumentVersionRepository(session).get(version_id) is None:
         raise HTTPException(status_code=404, detail="Document version not found")
     relationships = ListDocumentRelationships(

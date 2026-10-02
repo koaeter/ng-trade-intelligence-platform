@@ -473,6 +473,16 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
         ))
         self._session.flush()
 
+    def get(self, segment_id: str) -> ExtractionSegment | None:
+        row = self._session.get(ExtractionSegmentModel, segment_id)
+        if row is None:
+            return None
+        return ExtractionSegment(
+            row.id, row.artifact_id, row.sequence, row.text,
+            row.page_number, row.section, row.source_start, row.source_end,
+            row.locator, row.extraction_id,
+        )
+
     def list_for_artifact(self, artifact_id: str) -> list[ExtractionSegment]:
         rows = self._session.scalars(
             select(ExtractionSegmentModel)

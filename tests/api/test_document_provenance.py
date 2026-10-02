@@ -61,6 +61,47 @@ class FakeSegment:
     locator = "page:1"
 
 
+class FakeComparison:
+    id = "comparison-1"
+    baseline_extraction_id = "extraction-1"
+    candidate_extraction_id = "extraction-2"
+    baseline_input_checksum_sha256 = "input-1"
+    candidate_input_checksum_sha256 = "input-2"
+    baseline_output_sha256 = "output-1"
+    candidate_output_sha256 = "output-2"
+    result = type("Result", (), {"value": "DIFFERENT_INPUT_DIFFERENT_OUTPUT"})()
+    compared_at = __import__("datetime").datetime(2026, 10, 2)
+
+
+class FakeComparisonRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_extraction(self, extraction_id):
+        return [FakeComparison()] if extraction_id == "extraction-1" else []
+
+
+class FakeDiff:
+    id = "diff-1"
+    comparison_id = "comparison-1"
+    baseline_extraction_id = "extraction-1"
+    candidate_extraction_id = "extraction-2"
+    entry_count = 1
+    unchanged_count = 0
+    added_count = 1
+    removed_count = 0
+    modified_count = 0
+    created_at = __import__("datetime").datetime(2026, 10, 2)
+
+
+class FakeDiffRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_comparison(self, comparison_id):
+        return [FakeDiff()] if comparison_id == "comparison-1" else []
+
+
 class FakeSegmentRepository:
     def __init__(self, session) -> None:
         pass
@@ -126,6 +167,8 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     monkeypatch.setattr(api, "SqlAlchemyDocumentRelationshipRepository", FakeRelationshipRepository)
     monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeExtractionRepository)
     monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionComparisonRepository", FakeComparisonRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionDiffRepository", FakeDiffRepository)
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/document-1/provenance")
@@ -139,6 +182,8 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     assert body["relationships_by_version"]["version-1"][0]["id"] == "relationship-1"
     assert body["extraction_runs_by_artifact"]["artifact-1"][0]["id"] == "extraction-1"
     assert body["segments_by_extraction"]["extraction-1"][0]["id"] == "segment-1"
+    assert body["comparisons_by_extraction"]["extraction-1"][0]["id"] == "comparison-1"
+    assert body["diffs_by_comparison"]["comparison-1"][0]["id"] == "diff-1"
 
 
 def test_get_document_provenance_returns_404_for_missing_document(monkeypatch):

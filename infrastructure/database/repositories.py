@@ -349,6 +349,22 @@ class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
             row.acquisition_event_id, row.document_version_id,
         )
 
+    def list_for_document_version(self, document_version_id: str) -> list[SourceArtifact]:
+        rows = self._session.scalars(
+            select(SourceArtifactModel).where(
+                SourceArtifactModel.document_version_id == document_version_id
+            ).order_by(SourceArtifactModel.acquired_at, SourceArtifactModel.id)
+        ).all()
+        return [
+            SourceArtifact(
+                row.id, row.source_id, row.document_id, ArtifactKind(row.kind),
+                row.storage_key, row.checksum_sha256, row.acquired_at,
+                row.mime_type, row.original_filename,
+                ArtifactProcessingState(row.processing_state),
+                row.acquisition_event_id, row.document_version_id,
+            )
+            for row in rows
+        ]
 
 class SqlAlchemyExtractedTextRepository(ExtractedTextRepository):
     def __init__(self, session: Session) -> None: self._session = session

@@ -212,3 +212,67 @@ def test_get_extraction_run_returns_404(monkeypatch) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+
+class FakeSegment:
+    id = "segment-1"
+    artifact_id = "artifact-1"
+    extraction_id = "run-1"
+    sequence = 4
+    text = "extracted text"
+    page_number = 2
+    section = "Section A"
+    source_start = 10
+    source_end = 24
+    locator = "page:2"
+
+
+class FakeSegmentRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, segment_id: str):
+        return FakeSegment() if segment_id == "segment-1" else None
+
+    def list_for_extraction(self, extraction_id: str):
+        return [FakeSegment()] if extraction_id == "run-1" else []
+
+
+def test_get_extraction_segment(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-segments/segment-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "segment-1"
+    assert body["text"] == "extracted text"
+
+
+def test_get_extraction_segment_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-segments/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+
+
+def test_list_extraction_segments(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-runs/run-1/segments")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["sequence"] == 4

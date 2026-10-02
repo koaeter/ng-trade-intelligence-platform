@@ -347,3 +347,47 @@ def test_list_extraction_runs_for_artifact(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()[0]["id"] == "run-1"
+
+
+class FakeExtractedText:
+    artifact_id = "artifact-1"
+    text = "extracted text"
+    extractor = "extractor"
+    extractor_version = "1.0"
+    extracted_at = datetime(2026, 10, 2, tzinfo=timezone.utc)
+    ocr_used = True
+
+
+class FakeExtractedTextRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, artifact_id: str):
+        return FakeExtractedText() if artifact_id == "artifact-1" else None
+
+
+def test_get_extracted_text(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractedTextRepository", FakeExtractedTextRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/source-artifacts/artifact-1/extracted-text")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["artifact_id"] == "artifact-1"
+    assert body["ocr_used"] is True
+
+
+def test_get_extracted_text_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractedTextRepository", FakeExtractedTextRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/source-artifacts/missing/extracted-text")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

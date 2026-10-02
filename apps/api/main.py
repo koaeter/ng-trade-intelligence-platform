@@ -31,8 +31,8 @@ from packages.application.source.register_source import RegisterSourceFromEndpoi
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
-from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
+from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extraction_run_query import GetExtractionRun
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario

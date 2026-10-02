@@ -206,17 +206,6 @@ class SourceArtifactResponse(BaseModel):
     document_version_id: str | None
 
 
-class DocumentProvenanceResponse(BaseModel):
-    document_id: str
-    versions: list[DocumentVersionResponse]
-    artifacts_by_version: dict[str, list[SourceArtifactResponse]]
-    relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
-    extraction_runs_by_artifact: dict[str, list[ExtractionRunResponse]]
-    segments_by_extraction: dict[str, list[ExtractionSegmentResponse]]
-    comparisons_by_extraction: dict[str, list[ExtractionComparisonResponse]]
-    diffs_by_comparison: dict[str, list[ExtractionDiffSummaryResponse]]
-
-
 class ExtractionSegmentResponse(BaseModel):
     id: str
     artifact_id: str
@@ -301,6 +290,19 @@ class ExtractionDiffSummaryResponse(BaseModel):
     removed_count: int
     modified_count: int
     created_at: str
+
+class DocumentProvenanceResponse(BaseModel):
+    document_id: str
+    versions: list[DocumentVersionResponse]
+    artifacts_by_version: dict[str, list[SourceArtifactResponse]]
+    relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
+    extraction_runs_by_artifact: dict[str, list[ExtractionRunResponse]]
+    segments_by_extraction: dict[str, list[ExtractionSegmentResponse]]
+    comparisons_by_extraction: dict[str, list[ExtractionComparisonResponse]]
+    diffs_by_comparison: dict[str, list[ExtractionDiffSummaryResponse]]
+
+
+
 
 class EvidenceResponse(BaseModel):
     id: str

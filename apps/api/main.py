@@ -38,6 +38,7 @@ from packages.application.source.acquisition_history import GetSourceAcquisition
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.artifact_query import GetSourceArtifact
+from packages.application.source.document_version_artifact_query import ListSourceArtifactsForDocumentVersion
 from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
 from packages.application.source.document_relationship_query import (
@@ -528,6 +529,19 @@ def get_extracted_text(artifact_id: str, session: Session = Depends(get_session)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return _extracted_text_response(extracted)
+
+
+@app.get("/api/v1/document-versions/{version_id}/artifacts", response_model=list[SourceArtifactResponse], tags=["sources"])
+def list_document_version_artifacts(
+    version_id: str,
+    session: Session = Depends(get_session),
+) -> list[SourceArtifactResponse]:
+    if SqlAlchemyDocumentVersionRepository(session).get(version_id) is None:
+        raise HTTPException(status_code=404, detail="Document version not found")
+    artifacts = ListSourceArtifactsForDocumentVersion(
+        SqlAlchemySourceArtifactRepository(session)
+    ).execute(version_id)
+    return [_source_artifact_response(artifact) for artifact in artifacts]
 
 
 @app.get("/api/v1/source-artifacts/{artifact_id}", response_model=SourceArtifactResponse, tags=["sources"])

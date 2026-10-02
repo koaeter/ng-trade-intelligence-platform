@@ -10,9 +10,13 @@ class MemorySummaryRepository:
 
 
 def test_get_document_provenance_summary_returns_repository_summary():
-    summary = type(\n        "Summary",\n        (),\n        {"document_id": "document-1", "version_count": 2, "artifact_count": 3,
+    summary = type(
+        "Summary",
+        (),
+        {"document_id": "document-1", "version_count": 2, "artifact_count": 3,
         "relationship_count": 1, "extraction_run_count": 4, "segment_count": 100,
-        "comparison_count": 2, "diff_count": 2, "diff_entry_count": 12},\n    )()
+        "comparison_count": 2, "diff_count": 2, "diff_entry_count": 12},
+    )()
     result = GetDocumentProvenanceSummary(MemorySummaryRepository(summary)).execute("document-1")
     assert result.document_id == "document-1"
     assert result.version_count == 2

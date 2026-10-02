@@ -9,10 +9,10 @@ class GetExtractionSegment:
         self.segments = segments
 
     def execute(self, segment_id: str) -> ExtractionSegment:
-        for segment in self.segments.list_for_artifact(""):
-            if segment.id == segment_id:
-                return segment
-        raise ValueError("Extraction segment does not exist")
+        segment = self.segments.get(segment_id)
+        if segment is None:
+            raise ValueError("Extraction segment does not exist")
+        return segment
 
 
 class ListExtractionSegments:

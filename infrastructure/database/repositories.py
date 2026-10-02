@@ -8,7 +8,7 @@ from infrastructure.database.models import (
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
     RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionRunModel, ExtractionComparisonModel, ExtractionSegmentModel, ProvisionCandidateModel,
-    AcquisitionEventModel, DocumentVersionModel, DocumentRelationshipModel,
+    AcquisitionEventModel, DocumentVersionModel, DocumentRelationshipModel, ExtractionDiffModel, ExtractionDiffEntryModel,
 )
 from packages.application.catalog.repositories import CountryRepository, HSCodeRepository, MarketRepository, ProductRepository
 from packages.application.scenarios.repositories import ApplicabilityEvaluationRepository, EvidenceRepository, ExportScenarioRepository, RequirementRepository
@@ -21,6 +21,7 @@ from packages.domain.requirement.models import Requirement
 from packages.domain.scenario.models import ApplicabilityEvaluation, EvaluationResult, ExportScenario
 from packages.domain.source.artifacts import ArtifactKind, ArtifactProcessingState, ExtractedText, SourceArtifact
 from packages.domain.source.extraction import ExtractionComparison, ExtractionComparisonResult, ExtractionRun, ExtractionSegment
+from packages.domain.source.extraction_diff import ExtractionDiff, ExtractionDiffEntry, ExtractionDiffEntryType
 from packages.domain.source.provision_candidates import ProvisionCandidate, ProvisionCandidateStatus
 
 from packages.domain.source.models import Document, Provision, Source, SourceStatus
@@ -499,6 +500,83 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             )
             for row in rows
         ]
+
+class SqlAlchemyExtractionDiffRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, diff: ExtractionDiff) -> None:
+        self._session.add(ExtractionDiffModel(
+            id=diff.id,
+            comparison_id=diff.comparison_id,
+            baseline_extraction_id=diff.baseline_extraction_id,
+            candidate_extraction_id=diff.candidate_extraction_id,
+            entry_count=diff.entry_count,
+            unchanged_count=diff.unchanged_count,
+            added_count=diff.added_count,
+            removed_count=diff.removed_count,
+            modified_count=diff.modified_count,
+            created_at=diff.created_at,
+        ))
+        self._session.flush()
+
+    def get(self, diff_id: str) -> ExtractionDiff | None:
+        row = self._session.get(ExtractionDiffModel, diff_id)
+        if row is None:
+            return None
+        return ExtractionDiff(row.id, row.comparison_id, row.baseline_extraction_id,
+            row.candidate_extraction_id, row.entry_count, row.unchanged_count,
+            row.added_count, row.removed_count, row.modified_count, row.created_at)
+
+    def list_for_comparison(self, comparison_id: str) -> list[ExtractionDiff]:
+        rows = self._session.scalars(
+            select(ExtractionDiffModel)
+            .where(ExtractionDiffModel.comparison_id == comparison_id)
+            .order_by(ExtractionDiffModel.created_at, ExtractionDiffModel.id)
+        ).all()
+        return [ExtractionDiff(row.id, row.comparison_id, row.baseline_extraction_id,
+            row.candidate_extraction_id, row.entry_count, row.unchanged_count,
+            row.added_count, row.removed_count, row.modified_count, row.created_at)
+            for row in rows]
+
+
+class SqlAlchemyExtractionDiffEntryRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, entry: ExtractionDiffEntry) -> None:
+        self._session.add(ExtractionDiffEntryModel(
+            id=entry.id, diff_id=entry.diff_id, entry_type=entry.entry_type.value,
+            ordinal=entry.ordinal, baseline_segment_id=entry.baseline_segment_id,
+            candidate_segment_id=entry.candidate_segment_id,
+            baseline_sequence=entry.baseline_sequence, candidate_sequence=entry.candidate_sequence,
+            baseline_text_sha256=entry.baseline_text_sha256,
+            candidate_text_sha256=entry.candidate_text_sha256,
+            baseline_page_number=entry.baseline_page_number,
+            candidate_page_number=entry.candidate_page_number,
+            baseline_section=entry.baseline_section, candidate_section=entry.candidate_section,
+            baseline_source_start=entry.baseline_source_start, baseline_source_end=entry.baseline_source_end,
+            candidate_source_start=entry.candidate_source_start, candidate_source_end=entry.candidate_source_end,
+            baseline_locator=entry.baseline_locator, candidate_locator=entry.candidate_locator,
+        ))
+        self._session.flush()
+
+    def list_for_diff(self, diff_id: str) -> list[ExtractionDiffEntry]:
+        rows = self._session.scalars(
+            select(ExtractionDiffEntryModel)
+            .where(ExtractionDiffEntryModel.diff_id == diff_id)
+            .order_by(ExtractionDiffEntryModel.ordinal, ExtractionDiffEntryModel.id)
+        ).all()
+        return [ExtractionDiffEntry(
+            row.id, row.diff_id, ExtractionDiffEntryType(row.entry_type), row.ordinal,
+            row.baseline_segment_id, row.candidate_segment_id, row.baseline_sequence,
+            row.candidate_sequence, row.baseline_text_sha256, row.candidate_text_sha256,
+            row.baseline_page_number, row.candidate_page_number, row.baseline_section,
+            row.candidate_section, row.baseline_source_start, row.baseline_source_end,
+            row.candidate_source_start, row.candidate_source_end, row.baseline_locator,
+            row.candidate_locator,
+        ) for row in rows]
+
 
 class SqlAlchemyProvisionCandidateRepository:
     def __init__(self, session: Session) -> None:

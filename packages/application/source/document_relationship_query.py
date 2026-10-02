@@ -1,4 +1,6 @@
-from packages.application.source.document_relationship_repositories import DocumentRelationshipRepository
+from packages.application.source.document_relationship_repositories import (
+    DocumentRelationshipRepository,
+)
 from packages.domain.source.document_relationships import DocumentRelationship
 
 

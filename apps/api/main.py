@@ -20,6 +20,9 @@ from infrastructure.database.repositories import (
     SqlAlchemySourceRepository,
     SqlAlchemyAuthorityEndpointRepository,
     SqlAlchemyAcquisitionEventRepository,
+    SqlAlchemyExtractionComparisonRepository,
+    SqlAlchemyExtractionDiffRepository,
+    SqlAlchemyExtractionDiffEntryRepository,
 )
 from infrastructure.database.session import get_session
 from infrastructure.acquisition.http import HTTPSourceFetcher
@@ -28,6 +31,7 @@ from packages.application.source.register_source import RegisterSourceFromEndpoi
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
+from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -120,6 +124,56 @@ class AuthorityEndpointResponse(BaseModel):
     verification_note: str | None
 
 
+
+class ExtractionDiffEntryResponse(BaseModel):
+    id: str
+    diff_id: str
+    entry_type: str
+    ordinal: int
+    baseline_segment_id: str | None
+    candidate_segment_id: str | None
+    baseline_sequence: int | None
+    candidate_sequence: int | None
+    baseline_text_sha256: str | None
+    candidate_text_sha256: str | None
+    baseline_page_number: int | None
+    candidate_page_number: int | None
+    baseline_section: str | None
+    candidate_section: str | None
+    baseline_source_start: int | None
+    baseline_source_end: int | None
+    candidate_source_start: int | None
+    candidate_source_end: int | None
+    baseline_locator: str | None
+    candidate_locator: str | None
+
+
+class ExtractionDiffResponse(BaseModel):
+    id: str
+    comparison_id: str
+    baseline_extraction_id: str
+    candidate_extraction_id: str
+    entry_count: int
+    unchanged_count: int
+    added_count: int
+    removed_count: int
+    modified_count: int
+    created_at: str
+    entries: list[ExtractionDiffEntryResponse]
+
+
+class ExtractionDiffSummaryResponse(BaseModel):
+    id: str
+    comparison_id: str
+    baseline_extraction_id: str
+    candidate_extraction_id: str
+    entry_count: int
+    unchanged_count: int
+    added_count: int
+    removed_count: int
+    modified_count: int
+    created_at: str
+
 class EvidenceResponse(BaseModel):
     id: str
     evidence_type: str
@@ -129,6 +183,71 @@ class EvidenceResponse(BaseModel):
     verified: bool
     document_id: str | None
     provision_id: str | None
+
+
+
+def _extraction_diff_entry_response(entry) -> ExtractionDiffEntryResponse:
+    return ExtractionDiffEntryResponse(
+        id=entry.id,
+        diff_id=entry.diff_id,
+        entry_type=entry.entry_type.value,
+        ordinal=entry.ordinal,
+        baseline_segment_id=entry.baseline_segment_id,
+        candidate_segment_id=entry.candidate_segment_id,
+        baseline_sequence=entry.baseline_sequence,
+        candidate_sequence=entry.candidate_sequence,
+        baseline_text_sha256=entry.baseline_text_sha256,
+        candidate_text_sha256=entry.candidate_text_sha256,
+        baseline_page_number=entry.baseline_page_number,
+        candidate_page_number=entry.candidate_page_number,
+        baseline_section=entry.baseline_section,
+        candidate_section=entry.candidate_section,
+        baseline_source_start=entry.baseline_source_start,
+        baseline_source_end=entry.baseline_source_end,
+        candidate_source_start=entry.candidate_source_start,
+        candidate_source_end=entry.candidate_source_end,
+        baseline_locator=entry.baseline_locator,
+        candidate_locator=entry.candidate_locator,
+    )
+
+
+def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
+    return ExtractionDiffSummaryResponse(
+        id=diff.id,
+        comparison_id=diff.comparison_id,
+        baseline_extraction_id=diff.baseline_extraction_id,
+        candidate_extraction_id=diff.candidate_extraction_id,
+        entry_count=diff.entry_count,
+        unchanged_count=diff.unchanged_count,
+        added_count=diff.added_count,
+        removed_count=diff.removed_count,
+        modified_count=diff.modified_count,
+        created_at=diff.created_at.isoformat(),
+    )
+
+
+@app.get("/api/v1/extraction-diffs/{diff_id}", response_model=ExtractionDiffResponse, tags=["extraction"])
+def get_extraction_diff(diff_id: str, session: Session = Depends(get_session)) -> ExtractionDiffResponse:
+    try:
+        diff, entries = GetExtractionDiff(
+            SqlAlchemyExtractionDiffRepository(session),
+            SqlAlchemyExtractionDiffEntryRepository(session),
+        ).execute(diff_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return ExtractionDiffResponse(
+        **_extraction_diff_summary_response(diff).model_dump(),
+        entries=[_extraction_diff_entry_response(entry) for entry in entries],
+    )
+
+
+@app.get("/api/v1/extraction-comparisons/{comparison_id}/diffs", response_model=list[ExtractionDiffSummaryResponse], tags=["extraction"])
+def list_extraction_diffs(comparison_id: str, session: Session = Depends(get_session)) -> list[ExtractionDiffSummaryResponse]:
+    comparison = SqlAlchemyExtractionComparisonRepository(session).get(comparison_id)
+    if comparison is None:
+        raise HTTPException(status_code=404, detail="Extraction comparison not found")
+    diffs = ListExtractionDiffs(SqlAlchemyExtractionDiffRepository(session)).execute(comparison_id)
+    return [_extraction_diff_summary_response(diff) for diff in diffs]
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])

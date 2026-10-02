@@ -6,6 +6,7 @@ from packages.application.source.extraction_repositories import (
     ExtractionSegmentRepository,
     ExtractionComparisonRepository,
     ExtractionDiffRepository,
+    ExtractionDiffEntryRepository,
 )
 from packages.application.source.document_version_repositories import (
     DocumentVersionRepository,
@@ -17,7 +18,7 @@ from packages.domain.source.document_relationships import DocumentRelationship
 from packages.domain.source.artifacts import SourceArtifact
 from packages.domain.source.document_versions import DocumentVersion
 from packages.domain.source.extraction import ExtractionComparison, ExtractionRun, ExtractionSegment
-from packages.domain.source.extraction_diff import ExtractionDiff
+from packages.domain.source.extraction_diff import ExtractionDiff, ExtractionDiffEntry
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class DocumentProvenance:
     segments_by_extraction: dict[str, tuple[ExtractionSegment, ...]]
     comparisons_by_extraction: dict[str, tuple[ExtractionComparison, ...]]
     diffs_by_comparison: dict[str, tuple[ExtractionDiff, ...]]
+    diff_entries_by_diff: dict[str, tuple[ExtractionDiffEntry, ...]]
 
 
 class GetDocumentProvenance:
@@ -43,6 +45,7 @@ class GetDocumentProvenance:
         segments: ExtractionSegmentRepository,
         comparisons: ExtractionComparisonRepository,
         diffs: ExtractionDiffRepository,
+        diff_entries: ExtractionDiffEntryRepository,
     ) -> None:
         self.versions = versions
         self.artifacts = artifacts
@@ -51,6 +54,7 @@ class GetDocumentProvenance:
         self.segments = segments
         self.comparisons = comparisons
         self.diffs = diffs
+        self.diff_entries = diff_entries
 
     def execute(self, document_id: str) -> DocumentProvenance:
         versions = tuple(self.versions.list_for_document(document_id))
@@ -82,6 +86,11 @@ class GetDocumentProvenance:
             for extraction_comparisons in comparisons.values()
             for comparison in extraction_comparisons
         }
+        diff_entries = {
+            diff.id: tuple(self.diff_entries.list_for_diff(diff.id))
+            for comparison_diffs in diffs.values()
+            for diff in comparison_diffs
+        }
         return DocumentProvenance(
             versions=versions,
             artifacts_by_version=artifacts,
@@ -90,4 +99,5 @@ class GetDocumentProvenance:
             segments_by_extraction=segments,
             comparisons_by_extraction=comparisons,
             diffs_by_comparison=diffs,
+            diff_entries_by_diff=diff_entries,
         )

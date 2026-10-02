@@ -151,13 +151,6 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
-class DocumentProvenanceResponse(BaseModel):
-    document_id: str
-    versions: list[DocumentVersionResponse]
-    artifacts_by_version: dict[str, list[SourceArtifactResponse]]
-    relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
-
-
 class DocumentResponse(BaseModel):
     id: str
     source_id: str
@@ -211,6 +204,13 @@ class SourceArtifactResponse(BaseModel):
     processing_state: str
     acquisition_event_id: str | None
     document_version_id: str | None
+
+
+class DocumentProvenanceResponse(BaseModel):
+    document_id: str
+    versions: list[DocumentVersionResponse]
+    artifacts_by_version: dict[str, list[SourceArtifactResponse]]
+    relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
 
 
 class ExtractionSegmentResponse(BaseModel):

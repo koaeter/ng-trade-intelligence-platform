@@ -23,6 +23,10 @@ from infrastructure.database.repositories import (
     SqlAlchemyExtractionComparisonRepository,
     SqlAlchemyExtractionDiffRepository,
     SqlAlchemyExtractionDiffEntryRepository,
+    SqlAlchemySourceArtifactRepository,
+    SqlAlchemyExtractedTextRepository,
+    SqlAlchemyExtractionRunRepository,
+    SqlAlchemyExtractionSegmentRepository,
 )
 from infrastructure.database.session import get_session
 from infrastructure.acquisition.http import HTTPSourceFetcher

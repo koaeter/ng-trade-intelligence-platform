@@ -94,6 +94,37 @@ class FakeDiff:
     created_at = __import__("datetime").datetime(2026, 10, 2)
 
 
+class FakeDiffEntry:
+    id = "diff-entry-1"
+    diff_id = "diff-1"
+    entry_type = type("EntryType", (), {"value": "MODIFIED"})()
+    ordinal = 1
+    baseline_segment_id = "segment-1"
+    candidate_segment_id = "segment-2"
+    baseline_sequence = 1
+    candidate_sequence = 1
+    baseline_text_sha256 = "old"
+    candidate_text_sha256 = "new"
+    baseline_page_number = 1
+    candidate_page_number = 1
+    baseline_section = "Section"
+    candidate_section = "Section"
+    baseline_source_start = 0
+    baseline_source_end = 3
+    candidate_source_start = 0
+    candidate_source_end = 3
+    baseline_locator = "page:1"
+    candidate_locator = "page:1"
+
+
+class FakeDiffEntryRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_diff(self, diff_id):
+        return [FakeDiffEntry()] if diff_id == "diff-1" else []
+
+
 class FakeDiffRepository:
     def __init__(self, session) -> None:
         pass
@@ -169,6 +200,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
     monkeypatch.setattr(api, "SqlAlchemyExtractionComparisonRepository", FakeComparisonRepository)
     monkeypatch.setattr(api, "SqlAlchemyExtractionDiffRepository", FakeDiffRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionDiffEntryRepository", FakeDiffEntryRepository)
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/document-1/provenance")
@@ -184,6 +216,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     assert body["segments_by_extraction"]["extraction-1"][0]["id"] == "segment-1"
     assert body["comparisons_by_extraction"]["extraction-1"][0]["id"] == "comparison-1"
     assert body["diffs_by_comparison"]["comparison-1"][0]["id"] == "diff-1"
+    assert body["diff_entries_by_diff"]["diff-1"][0]["id"] == "diff-entry-1"
 
 
 def test_get_document_provenance_returns_404_for_missing_document(monkeypatch):

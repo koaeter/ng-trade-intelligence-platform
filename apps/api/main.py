@@ -28,6 +28,7 @@ from infrastructure.database.repositories import (
     SqlAlchemyExtractionRunRepository,
     SqlAlchemyExtractionSegmentRepository,
     SqlAlchemyDocumentVersionRepository,
+    SqlAlchemyDocumentRelationshipRepository,
 )
 from infrastructure.database.session import get_session
 from infrastructure.acquisition.http import HTTPSourceFetcher
@@ -39,6 +40,7 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
+from packages.application.source.document_relationship_query import GetDocumentRelationship, ListDocumentRelationships
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extracted_text_query import GetExtractedText
@@ -153,6 +155,16 @@ class DocumentResponse(BaseModel):
     effective_from: date | None
     effective_to: date | None
     version_label: str | None
+
+
+class DocumentRelationshipResponse(BaseModel):
+    id: str
+    relationship_type: str
+    from_version_id: str
+    to_version_id: str
+    verified: bool
+    evidence_reference: str | None
+    note: str | None
 
 
 class DocumentVersionResponse(BaseModel):
@@ -306,6 +318,18 @@ def _document_response(document) -> DocumentResponse:
     )
 
 
+def _document_relationship_response(relationship) -> DocumentRelationshipResponse:
+    return DocumentRelationshipResponse(
+        id=relationship.id,
+        relationship_type=relationship.relationship_type.value,
+        from_version_id=relationship.from_version_id,
+        to_version_id=relationship.to_version_id,
+        verified=relationship.verified,
+        evidence_reference=relationship.evidence_reference,
+        note=relationship.note,
+    )
+
+
 def _document_version_response(version) -> DocumentVersionResponse:
     return DocumentVersionResponse(
         id=version.id,
@@ -444,6 +468,27 @@ def get_document(document_id: str, session: Session = Depends(get_session)) -> D
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return _document_response(document)
+
+
+@app.get("/api/v1/document-relationships/{relationship_id}", response_model=DocumentRelationshipResponse, tags=["sources"])
+def get_document_relationship(relationship_id: str, session: Session = Depends(get_session)) -> DocumentRelationshipResponse:
+    try:
+        relationship = GetDocumentRelationship(
+            SqlAlchemyDocumentRelationshipRepository(session)
+        ).execute(relationship_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _document_relationship_response(relationship)
+
+
+@app.get("/api/v1/document-versions/{version_id}/relationships", response_model=list[DocumentRelationshipResponse], tags=["sources"])
+def list_document_relationships(version_id: str, session: Session = Depends(get_session)) -> list[DocumentRelationshipResponse]:
+    if SqlAlchemyDocumentVersionRepository(session).get(version_id) is None:
+        raise HTTPException(status_code=404, detail="Document version not found")
+    relationships = ListDocumentRelationships(
+        SqlAlchemyDocumentRelationshipRepository(session)
+    ).execute(version_id)
+    return [_document_relationship_response(relationship) for relationship in relationships]
 
 
 @app.get("/api/v1/document-versions/{version_id}", response_model=DocumentVersionResponse, tags=["sources"])

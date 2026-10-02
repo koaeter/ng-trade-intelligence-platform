@@ -438,3 +438,47 @@ def test_list_document_versions(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()[0]["id"] == "version-1"
+
+
+class FakeDocument:
+    id = "document-1"
+    source_id = "source-1"
+    title = "Regulation"
+    document_type = "REGULATION"
+    publication_date = date(2026, 10, 1)
+    effective_from = None
+    effective_to = None
+    version_label = "v1"
+
+
+class FakeDocumentRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, document_id: str):
+        return FakeDocument() if document_id == "document-1" else None
+
+
+def test_get_document(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyDocumentRepository", FakeDocumentRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/documents/document-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Regulation"
+
+
+def test_get_document_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyDocumentRepository", FakeDocumentRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/documents/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

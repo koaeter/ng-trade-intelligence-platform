@@ -119,3 +119,50 @@ def test_list_extraction_diffs_requires_existing_comparison(monkeypatch) -> None
     assert found.status_code == 200
     assert found.json()[0]["comparison_id"] == "comparison-1"
     assert missing.status_code == 404
+
+
+class FakeComparison:
+    id = "comparison-1"
+    baseline_extraction_id = "baseline"
+    candidate_extraction_id = "candidate"
+    baseline_input_checksum_sha256 = "input-a"
+    candidate_input_checksum_sha256 = "input-b"
+    baseline_output_sha256 = "output-a"
+    candidate_output_sha256 = "output-b"
+    result = type("Result", (), {"value": "DIFFERENT_INPUT_DIFFERENT_OUTPUT"})()
+    compared_at = datetime(2026, 10, 2, tzinfo=timezone.utc)
+
+
+class FakeComparisonQueryRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, comparison_id: str):
+        return FakeComparison() if comparison_id == "comparison-1" else None
+
+
+def test_get_extraction_comparison(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionComparisonRepository", FakeComparisonQueryRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-comparisons/comparison-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "comparison-1"
+    assert body["result"] == "DIFFERENT_INPUT_DIFFERENT_OUTPUT"
+
+
+def test_get_extraction_comparison_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionComparisonRepository", FakeComparisonQueryRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-comparisons/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

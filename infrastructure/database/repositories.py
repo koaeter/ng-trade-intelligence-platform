@@ -504,7 +504,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             for row in rows
         ]
 
-class SqlAlchemyExtractionDiffRepository:
+class SqlAlchemyExtractionDiffRepository(ExtractionDiffRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -543,7 +543,7 @@ class SqlAlchemyExtractionDiffRepository:
             for row in rows]
 
 
-class SqlAlchemyExtractionDiffEntryRepository:
+class SqlAlchemyExtractionDiffEntryRepository(ExtractionDiffEntryRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 

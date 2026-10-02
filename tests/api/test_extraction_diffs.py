@@ -166,3 +166,49 @@ def test_get_extraction_comparison_returns_404(monkeypatch) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+
+class FakeRun:
+    id = "run-1"
+    artifact_id = "artifact-1"
+    document_version_id = "version-1"
+    input_checksum_sha256 = "input"
+    extractor = "extractor"
+    extractor_version = "1.0"
+    extracted_at = datetime(2026, 10, 2, tzinfo=timezone.utc)
+    ocr_used = False
+
+
+class FakeRunRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, extraction_id: str):
+        return FakeRun() if extraction_id == "run-1" else None
+
+
+def test_get_extraction_run(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeRunRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-runs/run-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "run-1"
+    assert body["ocr_used"] is False
+
+
+def test_get_extraction_run_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeRunRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/extraction-runs/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

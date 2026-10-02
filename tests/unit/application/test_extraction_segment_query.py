@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 import pytest
 
 from packages.application.source.extraction_segment_query import (

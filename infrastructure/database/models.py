@@ -367,3 +367,41 @@ class RequirementRevisionModel(Base):
     destination_market_codes: Mapped[list] = mapped_column(JSON, nullable=False)
     evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     scope_is_general: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+
+class ExtractionDiffModel(Base):
+    __tablename__ = "extraction_diffs"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    comparison_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_comparisons.id", ondelete="CASCADE"), nullable=False, index=True)
+    baseline_extraction_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    candidate_extraction_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    entry_count: Mapped[int] = mapped_column(nullable=False)
+    unchanged_count: Mapped[int] = mapped_column(nullable=False)
+    added_count: Mapped[int] = mapped_column(nullable=False)
+    removed_count: Mapped[int] = mapped_column(nullable=False)
+    modified_count: Mapped[int] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ExtractionDiffEntryModel(Base):
+    __tablename__ = "extraction_diff_entries"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    diff_id: Mapped[str] = mapped_column(String(64), ForeignKey("extraction_diffs.id", ondelete="CASCADE"), nullable=False, index=True)
+    entry_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    ordinal: Mapped[int] = mapped_column(nullable=False)
+    baseline_segment_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("extraction_segments.id", ondelete="SET NULL"), index=True)
+    candidate_segment_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("extraction_segments.id", ondelete="SET NULL"), index=True)
+    baseline_sequence: Mapped[int | None] = mapped_column()
+    candidate_sequence: Mapped[int | None] = mapped_column()
+    baseline_text_sha256: Mapped[str | None] = mapped_column(String(64))
+    candidate_text_sha256: Mapped[str | None] = mapped_column(String(64))
+    baseline_page_number: Mapped[int | None] = mapped_column()
+    candidate_page_number: Mapped[int | None] = mapped_column()
+    baseline_section: Mapped[str | None] = mapped_column(String(1000))
+    candidate_section: Mapped[str | None] = mapped_column(String(1000))
+    baseline_source_start: Mapped[int | None] = mapped_column()
+    baseline_source_end: Mapped[int | None] = mapped_column()
+    candidate_source_start: Mapped[int | None] = mapped_column()
+    candidate_source_end: Mapped[int | None] = mapped_column()
+    baseline_locator: Mapped[str | None] = mapped_column(String(1000))
+    candidate_locator: Mapped[str | None] = mapped_column(String(1000))

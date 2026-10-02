@@ -425,6 +425,30 @@ class SqlAlchemyExtractionComparisonRepository(ExtractionComparisonRepository):
             row.baseline_output_sha256, row.candidate_output_sha256,
             ExtractionComparisonResult(row.result), row.compared_at,
         )
+    def list_for_extraction(self, extraction_id: str) -> list[ExtractionComparison]:
+        rows = self._session.scalars(
+            select(ExtractionComparisonModel)
+            .where(
+                (ExtractionComparisonModel.baseline_extraction_id == extraction_id)
+                | (ExtractionComparisonModel.candidate_extraction_id == extraction_id)
+            )
+            .order_by(ExtractionComparisonModel.compared_at, ExtractionComparisonModel.id)
+        ).all()
+        return [
+            ExtractionComparison(
+                row.id,
+                row.baseline_extraction_id,
+                row.candidate_extraction_id,
+                row.baseline_input_checksum_sha256,
+                row.candidate_input_checksum_sha256,
+                row.baseline_output_sha256,
+                row.candidate_output_sha256,
+                ExtractionComparisonResult(row.result),
+                row.compared_at,
+            )
+            for row in rows
+        ]
+
 
 
 class SqlAlchemyExtractionRunRepository(ExtractionRunRepository):

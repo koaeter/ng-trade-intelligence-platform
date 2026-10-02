@@ -31,6 +31,7 @@ from infrastructure.database.repositories import (
     SqlAlchemyDocumentRelationshipRepository,
 )
 from infrastructure.database.session import get_session
+from infrastructure.database.document_provenance import SqlAlchemyDocumentProvenanceSummaryRepository
 from infrastructure.acquisition.http import HTTPSourceFetcher
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
 from packages.application.source.register_source import RegisterSourceFromEndpoint
@@ -40,6 +41,7 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.document_version_artifact_query import ListSourceArtifactsForDocumentVersion
 from packages.application.source.document_provenance_query import GetDocumentProvenance
+from packages.application.source.document_provenance_summary import GetDocumentProvenanceSummary
 from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
 from packages.application.source.document_relationship_query import (
@@ -291,6 +293,18 @@ class ExtractionDiffSummaryResponse(BaseModel):
     modified_count: int
     created_at: str
 
+class DocumentProvenanceSummaryResponse(BaseModel):
+    document_id: str
+    version_count: int
+    artifact_count: int
+    relationship_count: int
+    extraction_run_count: int
+    segment_count: int
+    comparison_count: int
+    diff_count: int
+    diff_entry_count: int
+
+
 class DocumentProvenanceResponse(BaseModel):
     document_id: str
     versions: list[DocumentVersionResponse]
@@ -476,6 +490,30 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+@app.get("/api/v1/documents/{document_id}/provenance/summary", response_model=DocumentProvenanceSummaryResponse, tags=["sources"])
+def get_document_provenance_summary(
+    document_id: str,
+    session: Session = Depends(get_session),
+) -> DocumentProvenanceSummaryResponse:
+    try:
+        summary = GetDocumentProvenanceSummary(
+            SqlAlchemyDocumentProvenanceSummaryRepository(session)
+        ).execute(document_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return DocumentProvenanceSummaryResponse(
+        document_id=summary.document_id,
+        version_count=summary.version_count,
+        artifact_count=summary.artifact_count,
+        relationship_count=summary.relationship_count,
+        extraction_run_count=summary.extraction_run_count,
+        segment_count=summary.segment_count,
+        comparison_count=summary.comparison_count,
+        diff_count=summary.diff_count,
+        diff_entry_count=summary.diff_entry_count,
+    )
 
 
 @app.get("/api/v1/documents/{document_id}/provenance", response_model=DocumentProvenanceResponse, tags=["sources"])

@@ -213,6 +213,8 @@ class DocumentProvenanceResponse(BaseModel):
     relationships_by_version: dict[str, list[DocumentRelationshipResponse]]
     extraction_runs_by_artifact: dict[str, list[ExtractionRunResponse]]
     segments_by_extraction: dict[str, list[ExtractionSegmentResponse]]
+    comparisons_by_extraction: dict[str, list[ExtractionComparisonResponse]]
+    diffs_by_comparison: dict[str, list[ExtractionDiffSummaryResponse]]
 
 
 class ExtractionSegmentResponse(BaseModel):
@@ -486,6 +488,8 @@ def get_document_provenance(
         SqlAlchemyDocumentRelationshipRepository(session),
         SqlAlchemyExtractionRunRepository(session),
         SqlAlchemyExtractionSegmentRepository(session),
+        SqlAlchemyExtractionComparisonRepository(session),
+        SqlAlchemyExtractionDiffRepository(session),
     ).execute(document_id)
     return DocumentProvenanceResponse(
         document_id=document_id,
@@ -514,6 +518,20 @@ def get_document_provenance(
                 for segment in segments
             ]
             for extraction_id, segments in view.segments_by_extraction.items()
+        },
+        comparisons_by_extraction={
+            extraction_id: [
+                _extraction_comparison_response(comparison)
+                for comparison in comparisons
+            ]
+            for extraction_id, comparisons in view.comparisons_by_extraction.items()
+        },
+        diffs_by_comparison={
+            comparison_id: [
+                _extraction_diff_summary_response(diff)
+                for diff in diffs
+            ]
+            for comparison_id, diffs in view.diffs_by_comparison.items()
         },
     )
 

@@ -228,3 +228,46 @@ def test_get_document_provenance_returns_404_for_missing_document(monkeypatch):
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+class FakeProvenanceSummaryRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get_summary(self, document_id):
+        if document_id != "document-1":
+            return None
+        return type("Summary", (), {
+            "document_id": "document-1",
+            "version_count": 1,
+            "artifact_count": 1,
+            "relationship_count": 1,
+            "extraction_run_count": 1,
+            "segment_count": 1,
+            "comparison_count": 1,
+            "diff_count": 1,
+            "diff_entry_count": 1,
+        })()
+
+
+def test_get_document_provenance_summary(monkeypatch):
+    monkeypatch.setattr(api, "SqlAlchemyDocumentProvenanceSummaryRepository", FakeProvenanceSummaryRepository)
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/documents/document-1/provenance/summary")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["segment_count"] == 1
+    assert response.json()["diff_entry_count"] == 1
+
+
+def test_get_document_provenance_summary_returns_404(monkeypatch):
+    monkeypatch.setattr(api, "SqlAlchemyDocumentProvenanceSummaryRepository", FakeProvenanceSummaryRepository)
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/documents/missing/provenance/summary")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

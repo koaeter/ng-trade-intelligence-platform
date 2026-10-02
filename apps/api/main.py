@@ -39,6 +39,7 @@ from packages.application.source.verify_authority_endpoint import VerifyAuthorit
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.document_version_artifact_query import ListSourceArtifactsForDocumentVersion
+from packages.application.source.document_provenance_query import GetDocumentProvenance
 from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
 from packages.application.source.document_relationship_query import (
@@ -148,6 +149,12 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+
+class DocumentProvenanceResponse(BaseModel):
+    document_id: str
+    versions: list[DocumentVersionResponse]
+    artifacts_by_version: dict[str, list[SourceArtifactResponse]]
 
 
 class DocumentResponse(BaseModel):
@@ -461,6 +468,27 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+@app.get("/api/v1/documents/{document_id}/provenance", response_model=DocumentProvenanceResponse, tags=["sources"])
+def get_document_provenance(
+    document_id: str,
+    session: Session = Depends(get_session),
+) -> DocumentProvenanceResponse:
+    if SqlAlchemyDocumentRepository(session).get(document_id) is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    view = GetDocumentProvenance(
+        SqlAlchemyDocumentVersionRepository(session),
+        SqlAlchemySourceArtifactRepository(session),
+    ).execute(document_id)
+    return DocumentProvenanceResponse(
+        document_id=document_id,
+        versions=[_document_version_response(version) for version in view.versions],
+        artifacts_by_version={
+            version_id: [_source_artifact_response(artifact) for artifact in artifacts]
+            for version_id, artifacts in view.artifacts_by_version.items()
+        },
+    )
 
 
 @app.get("/api/v1/documents/{document_id}", response_model=DocumentResponse, tags=["sources"])

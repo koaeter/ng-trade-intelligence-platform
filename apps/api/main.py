@@ -33,6 +33,7 @@ from packages.application.source.verify_authority_endpoint import VerifyAuthorit
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
+from packages.application.source.extraction_run_query import GetExtractionRun
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
 from packages.domain.source.models import Document, Provision, Source
@@ -127,6 +128,18 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+class ExtractionRunResponse(BaseModel):
+    id: str
+    artifact_id: str
+    document_version_id: str | None
+    input_checksum_sha256: str
+    extractor: str
+    extractor_version: str
+    extracted_at: str
+    ocr_used: bool
+
+
 class ExtractionComparisonResponse(BaseModel):
     id: str
     baseline_extraction_id: str
@@ -201,6 +214,20 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _extraction_run_response(extraction) -> ExtractionRunResponse:
+    return ExtractionRunResponse(
+        id=extraction.id,
+        artifact_id=extraction.artifact_id,
+        document_version_id=extraction.document_version_id,
+        input_checksum_sha256=extraction.input_checksum_sha256,
+        extractor=extraction.extractor,
+        extractor_version=extraction.extractor_version,
+        extracted_at=extraction.extracted_at.isoformat(),
+        ocr_used=extraction.ocr_used,
+    )
+
+
 def _extraction_comparison_response(comparison) -> ExtractionComparisonResponse:
     return ExtractionComparisonResponse(
         id=comparison.id,
@@ -254,6 +281,18 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
         created_at=diff.created_at.isoformat(),
     )
 
+
+
+
+@app.get("/api/v1/extraction-runs/{extraction_id}", response_model=ExtractionRunResponse, tags=["extraction"])
+def get_extraction_run(extraction_id: str, session: Session = Depends(get_session)) -> ExtractionRunResponse:
+    try:
+        extraction = GetExtractionRun(
+            SqlAlchemyExtractionRunRepository(session)
+        ).execute(extraction_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _extraction_run_response(extraction)
 
 
 @app.get("/api/v1/extraction-comparisons/{comparison_id}", response_model=ExtractionComparisonResponse, tags=["extraction"])

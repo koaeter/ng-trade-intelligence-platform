@@ -38,7 +38,12 @@ class GetDocumentProvenance:
             version.id: tuple(self.artifacts.list_for_document_version(version.id))
             for version in versions
         }
+        relationships = {
+            version.id: tuple(self.relationships.list_for_version(version.id))
+            for version in versions
+        }
         return DocumentProvenance(
             versions=versions,
             artifacts_by_version=artifacts,
+            relationships_by_version=relationships,
         )

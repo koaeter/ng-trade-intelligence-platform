@@ -276,3 +276,53 @@ def test_list_extraction_segments(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()[0]["sequence"] == 4
+
+
+class FakeArtifact:
+    id = "artifact-1"
+    source_id = "source-1"
+    document_id = "document-1"
+    kind = type("Kind", (), {"value": "PDF"})()
+    storage_key = "storage/key"
+    checksum_sha256 = "checksum"
+    acquired_at = datetime(2026, 10, 2, tzinfo=timezone.utc)
+    mime_type = "application/pdf"
+    original_filename = "source.pdf"
+    processing_state = type("State", (), {"value": "EXTRACTED"})()
+    acquisition_event_id = "event-1"
+    document_version_id = "version-1"
+
+
+class FakeArtifactRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def get(self, artifact_id: str):
+        return FakeArtifact() if artifact_id == "artifact-1" else None
+
+
+def test_get_source_artifact(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemySourceArtifactRepository", FakeArtifactRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/source-artifacts/artifact-1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "artifact-1"
+    assert body["processing_state"] == "EXTRACTED"
+
+
+def test_get_source_artifact_returns_404(monkeypatch) -> None:
+    monkeypatch.setattr(api, "SqlAlchemySourceArtifactRepository", FakeArtifactRepository)
+
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get("/api/v1/source-artifacts/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404

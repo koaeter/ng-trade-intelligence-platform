@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from packages.application.source.artifact_repositories import SourceArtifactRepository
+from packages.application.source.extraction_repositories import ExtractionRunRepository
 from packages.application.source.document_version_repositories import (
     DocumentVersionRepository,
 )
@@ -10,6 +11,7 @@ from packages.application.source.document_relationship_repositories import (
 from packages.domain.source.document_relationships import DocumentRelationship
 from packages.domain.source.artifacts import SourceArtifact
 from packages.domain.source.document_versions import DocumentVersion
+from packages.domain.source.extraction import ExtractionRun
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,7 @@ class DocumentProvenance:
     versions: tuple[DocumentVersion, ...]
     artifacts_by_version: dict[str, tuple[SourceArtifact, ...]]
     relationships_by_version: dict[str, tuple[DocumentRelationship, ...]]
+    extraction_runs_by_artifact: dict[str, tuple[ExtractionRun, ...]]
 
 
 class GetDocumentProvenance:
@@ -27,10 +30,12 @@ class GetDocumentProvenance:
         versions: DocumentVersionRepository,
         artifacts: SourceArtifactRepository,
         relationships: DocumentRelationshipRepository,
+        extractions: ExtractionRunRepository,
     ) -> None:
         self.versions = versions
         self.artifacts = artifacts
         self.relationships = relationships
+        self.extractions = extractions
 
     def execute(self, document_id: str) -> DocumentProvenance:
         versions = tuple(self.versions.list_for_document(document_id))
@@ -42,8 +47,14 @@ class GetDocumentProvenance:
             version.id: tuple(self.relationships.list_for_version(version.id))
             for version in versions
         }
+        extraction_runs = {
+            artifact.id: tuple(self.extractions.list_for_artifact(artifact.id))
+            for version_artifacts in artifacts.values()
+            for artifact in version_artifacts
+        }
         return DocumentProvenance(
             versions=versions,
             artifacts_by_version=artifacts,
             relationships_by_version=relationships,
+            extraction_runs_by_artifact=extraction_runs,
         )

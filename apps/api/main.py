@@ -37,6 +37,7 @@ from packages.application.source.acquisition_history import GetSourceAcquisition
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
 from packages.application.source.source_acquisition import SourceAcquisitionPolicy
 from packages.application.source.artifact_query import GetSourceArtifact
+from packages.application.source.document_query import GetDocument
 from packages.application.source.document_version_query import GetDocumentVersion, ListDocumentVersions
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
@@ -140,6 +141,18 @@ class AuthorityEndpointResponse(BaseModel):
 
 
 
+
+
+
+class DocumentResponse(BaseModel):
+    id: str
+    source_id: str
+    title: str
+    document_type: str
+    publication_date: date | None
+    effective_from: date | None
+    effective_to: date | None
+    version_label: str | None
 
 
 class DocumentVersionResponse(BaseModel):
@@ -279,6 +292,20 @@ class EvidenceResponse(BaseModel):
 
 
 
+
+def _document_response(document) -> DocumentResponse:
+    return DocumentResponse(
+        id=document.id,
+        source_id=document.source_id,
+        title=document.title,
+        document_type=document.document_type,
+        publication_date=document.publication_date,
+        effective_from=document.effective_from,
+        effective_to=document.effective_to,
+        version_label=document.version_label,
+    )
+
+
 def _document_version_response(version) -> DocumentVersionResponse:
     return DocumentVersionResponse(
         id=version.id,
@@ -405,6 +432,18 @@ def _extraction_diff_summary_response(diff) -> ExtractionDiffSummaryResponse:
 
 
 
+
+
+
+@app.get("/api/v1/documents/{document_id}", response_model=DocumentResponse, tags=["sources"])
+def get_document(document_id: str, session: Session = Depends(get_session)) -> DocumentResponse:
+    try:
+        document = GetDocument(
+            SqlAlchemyDocumentRepository(session)
+        ).execute(document_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _document_response(document)
 
 
 @app.get("/api/v1/document-versions/{version_id}", response_model=DocumentVersionResponse, tags=["sources"])

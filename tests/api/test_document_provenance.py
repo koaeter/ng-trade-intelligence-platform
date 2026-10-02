@@ -48,6 +48,27 @@ class FakeExtraction:
     ocr_used = False
 
 
+class FakeSegment:
+    id = "segment-1"
+    artifact_id = "artifact-1"
+    extraction_id = "extraction-1"
+    sequence = 1
+    text = "text"
+    page_number = 1
+    section = "Section 1"
+    source_start = 0
+    source_end = 4
+    locator = "page:1"
+
+
+class FakeSegmentRepository:
+    def __init__(self, session) -> None:
+        pass
+
+    def list_for_extraction(self, extraction_id):
+        return [FakeSegment()] if extraction_id == "extraction-1" else []
+
+
 class FakeExtractionRepository:
     def __init__(self, session) -> None:
         pass
@@ -104,6 +125,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     monkeypatch.setattr(api, "SqlAlchemySourceArtifactRepository", FakeArtifactRepository)
     monkeypatch.setattr(api, "SqlAlchemyDocumentRelationshipRepository", FakeRelationshipRepository)
     monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeExtractionRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/document-1/provenance")
@@ -116,6 +138,7 @@ def test_get_document_provenance_includes_versions_artifacts_and_relationships(m
     assert body["artifacts_by_version"]["version-1"][0]["id"] == "artifact-1"
     assert body["relationships_by_version"]["version-1"][0]["id"] == "relationship-1"
     assert body["extraction_runs_by_artifact"]["artifact-1"][0]["id"] == "extraction-1"
+    assert body["segments_by_extraction"]["extraction-1"][0]["id"] == "segment-1"
 
 
 def test_get_document_provenance_returns_404_for_missing_document(monkeypatch):

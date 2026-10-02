@@ -34,7 +34,7 @@ from packages.application.source.source_acquisition import SourceAcquisitionPoli
 from packages.application.source.artifact_query import GetSourceArtifact
 from packages.application.source.extraction_comparison_query import GetExtractionComparison
 from packages.application.source.extraction_diff_query import GetExtractionDiff, ListExtractionDiffs
-from packages.application.source.extraction_run_query import GetExtractionRun
+from packages.application.source.extraction_run_query import GetExtractionRun, ListExtractionRunsForArtifact
 from packages.application.source.extraction_segment_query import GetExtractionSegment, ListExtractionSegments
 from packages.domain.evidence.models import Evidence
 from packages.domain.scenario.models import ExportScenario
@@ -361,6 +361,15 @@ def get_source_artifact(artifact_id: str, session: Session = Depends(get_session
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return _source_artifact_response(artifact)
+
+
+
+@app.get("/api/v1/source-artifacts/{artifact_id}/extraction-runs", response_model=list[ExtractionRunResponse], tags=["extraction"])
+def list_extraction_runs_for_artifact(artifact_id: str, session: Session = Depends(get_session)) -> list[ExtractionRunResponse]:
+    runs = ListExtractionRunsForArtifact(
+        SqlAlchemyExtractionRunRepository(session)
+    ).execute(artifact_id)
+    return [_extraction_run_response(extraction) for extraction in runs]
 
 
 @app.get("/api/v1/extraction-segments/{segment_id}", response_model=ExtractionSegmentResponse, tags=["extraction"])

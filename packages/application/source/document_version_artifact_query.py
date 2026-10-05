@@ -8,5 +8,5 @@ class ListSourceArtifactsForDocumentVersion:
     def __init__(self, artifacts: SourceArtifactRepository) -> None:
         self.artifacts = artifacts
 
-    def execute(self, document_version_id: str) -> list[SourceArtifact]:
-        return list(self.artifacts.list_for_document_version(document_version_id))
+    def execute(self, document_version_id: str, limit: int | None = None) -> list[SourceArtifact]:
+        return list(self.artifacts.list_for_document_version(document_version_id, limit=limit))

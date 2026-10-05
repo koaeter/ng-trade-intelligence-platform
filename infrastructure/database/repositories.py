@@ -309,13 +309,13 @@ class SqlAlchemyAcquisitionEventRepository:
         row.artifact_id = artifact_id
         self._session.flush()
 
-    def list_for_source(self, source_id: str):
+    def list_for_source(self, source_id: str, limit: int | None = None):
         from packages.domain.source.acquisition import AcquisitionEvent, AcquisitionEventStatus
         rows = self._session.scalars(
             select(AcquisitionEventModel)
             .where(AcquisitionEventModel.source_id == source_id)
             .order_by(AcquisitionEventModel.started_at.desc(), AcquisitionEventModel.id.desc())
-        ).all()
+        ).limit(limit).all()
         return [
             AcquisitionEvent(
                 row.id, row.source_id, row.endpoint_id, row.requested_url, row.retrieved_url,

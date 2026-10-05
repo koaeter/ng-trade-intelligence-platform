@@ -23,5 +23,5 @@ class ListDocumentRelationships:
     def __init__(self, relationships: DocumentRelationshipRepository) -> None:
         self.relationships = relationships
 
-    def execute(self, version_id: str) -> list[DocumentRelationship]:
-        return list(self.relationships.list_for_version(version_id))
+    def execute(self, version_id: str, limit: int | None = None) -> list[DocumentRelationship]:
+        return list(self.relationships.list_for_version(version_id, limit=limit))

@@ -90,6 +90,7 @@ def test_get_extraction_diff_returns_entries(monkeypatch) -> None:
     assert body["id"] == "diff-1"
     assert body["entries"][0]["entry_type"] == "ADDED"
     assert body["entries"][0]["ordinal"] == 0
+    assert body["entries_truncated"] is False
 
 
 def test_get_extraction_diff_returns_404(monkeypatch) -> None:

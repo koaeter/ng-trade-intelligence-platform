@@ -70,18 +70,18 @@ class GetDocumentProvenance:
             return values[:limit]
 
         versions = bounded(
-            self.versions.list_for_document(document_id),
+            self.versions.list_for_document(document_id, limit=limit + 1),
             "versions",
         )
         artifacts = {}
         relationships = {}
         for version in versions:
             artifacts[version.id] = bounded(
-                self.artifacts.list_for_document_version(version.id),
+                self.artifacts.list_for_document_version(version.id, limit=limit + 1),
                 f"artifacts_by_version:{version.id}",
             )
             relationships[version.id] = bounded(
-                self.relationships.list_for_version(version.id),
+                self.relationships.list_for_version(version.id, limit=limit + 1),
                 f"relationships_by_version:{version.id}",
             )
 
@@ -89,7 +89,7 @@ class GetDocumentProvenance:
         for version_artifacts in artifacts.values():
             for artifact in version_artifacts:
                 extraction_runs[artifact.id] = bounded(
-                    self.extractions.list_for_artifact(artifact.id),
+                    self.extractions.list_for_artifact(artifact.id, limit=limit + 1),
                     f"extraction_runs_by_artifact:{artifact.id}",
                 )
 
@@ -98,11 +98,11 @@ class GetDocumentProvenance:
         for artifact_extractions in extraction_runs.values():
             for extraction in artifact_extractions:
                 segments[extraction.id] = bounded(
-                    self.segments.list_for_extraction(extraction.id),
+                    self.segments.list_for_extraction(extraction.id, limit=limit + 1),
                     f"segments_by_extraction:{extraction.id}",
                 )
                 comparisons[extraction.id] = bounded(
-                    self.comparisons.list_for_extraction(extraction.id),
+                    self.comparisons.list_for_extraction(extraction.id, limit=limit + 1),
                     f"comparisons_by_extraction:{extraction.id}",
                 )
 
@@ -110,7 +110,7 @@ class GetDocumentProvenance:
         for extraction_comparisons in comparisons.values():
             for comparison in extraction_comparisons:
                 diffs[comparison.id] = bounded(
-                    self.diffs.list_for_comparison(comparison.id),
+                    self.diffs.list_for_comparison(comparison.id, limit=limit + 1),
                     f"diffs_by_comparison:{comparison.id}",
                 )
 
@@ -118,7 +118,7 @@ class GetDocumentProvenance:
         for comparison_diffs in diffs.values():
             for diff in comparison_diffs:
                 diff_entries[diff.id] = bounded(
-                    self.diff_entries.list_for_diff(diff.id),
+                    self.diff_entries.list_for_diff(diff.id, limit=limit + 1),
                     f"diff_entries_by_diff:{diff.id}",
                 )
 

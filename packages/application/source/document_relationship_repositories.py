@@ -13,5 +13,5 @@ class DocumentRelationshipRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_for_version(self, version_id: str) -> list[DocumentRelationship]:
+    def list_for_version(self, version_id: str, limit: int | None = None) -> list[DocumentRelationship]:
         raise NotImplementedError

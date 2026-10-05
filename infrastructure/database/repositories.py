@@ -544,7 +544,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             select(ExtractionSegmentModel)
             .where(ExtractionSegmentModel.extraction_id == extraction_id)
             .order_by(ExtractionSegmentModel.sequence)
-        ).all()
+        ).limit(limit).all()
         return [
             ExtractionSegment(
                 row.id, row.artifact_id, row.sequence, row.text,

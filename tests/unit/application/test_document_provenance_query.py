@@ -63,3 +63,25 @@ def test_get_document_provenance_builds_complete_processing_chain():
     assert [x.id for x in view.comparisons_by_extraction["e1"]] == ["c1"]
     assert [x.id for x in view.diffs_by_comparison["c1"]] == ["d1"]
     assert [x.id for x in view.diff_entries_by_diff["d1"]] == ["de1"]
+
+
+def test_get_document_provenance_applies_collection_limit_and_reports_truncation():
+    versions = [Item("v1", "document-1")]
+    artifacts = [
+        Item("a1", "document-1", "v1"),
+        Item("a2", "document-1", "v1"),
+    ]
+
+    view = GetDocumentProvenance(
+        Memory(versions),
+        Memory(artifacts),
+        Memory([]),
+        Memory([]),
+        Memory([]),
+        Memory([]),
+        Memory([]),
+        Memory([]),
+    ).execute("document-1", limit=1)
+
+    assert [x.id for x in view.artifacts_by_version["v1"]] == ["a1"]
+    assert "artifacts_by_version:v1" in view.truncated_collections

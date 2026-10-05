@@ -27,8 +27,9 @@ def test_get_returns_entries_in_ordinal_order():
     entries = [type("E", (), {"diff_id":"diff-1", "ordinal":2})(),
                type("E", (), {"diff_id":"diff-1", "ordinal":0})(),
                type("E", (), {"diff_id":"diff-1", "ordinal":1})()]
-    got, result = GetExtractionDiff(DiffRepo([d]), EntryRepo(entries)).execute("diff-1")
+    got, result, truncated = GetExtractionDiff(DiffRepo([d]), EntryRepo(entries)).execute("diff-1")
     assert got is d
+    assert truncated is False
     assert [x.ordinal for x in result] == [0, 1, 2]
 
 
@@ -41,3 +42,15 @@ def test_list_scopes_by_comparison():
     values = [diff("d1", "cmp-1"), diff("d2", "cmp-2"), diff("d3", "cmp-1")]
     result = ListExtractionDiffs(DiffRepo(values)).execute("cmp-1")
     assert [x.id for x in result] == ["d1", "d3"]
+
+def test_get_bounds_entries_and_reports_truncation():
+    d = diff()
+    entries = [
+        type("E", (), {"diff_id": "diff-1", "ordinal": 0})(),
+        type("E", (), {"diff_id": "diff-1", "ordinal": 1})(),
+    ]
+    _, result, truncated = GetExtractionDiff(DiffRepo([d]), EntryRepo(entries)).execute(
+        "diff-1", entry_limit=1
+    )
+    assert [x.ordinal for x in result] == [0]
+    assert truncated is True

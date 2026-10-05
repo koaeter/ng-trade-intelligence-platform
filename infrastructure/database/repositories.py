@@ -523,7 +523,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             row.locator, row.extraction_id,
         )
 
-    def list_for_artifact(self, artifact_id: str) -> list[ExtractionSegment]:
+    def list_for_artifact(self, artifact_id: str, limit: int | None = None) -> list[ExtractionSegment]:
         rows = self._session.scalars(
             select(ExtractionSegmentModel)
             .where(ExtractionSegmentModel.artifact_id == artifact_id)

@@ -21,5 +21,5 @@ class ListExtractionRunsForArtifact:
     def __init__(self, extractions: ExtractionRunRepository) -> None:
         self.extractions = extractions
 
-    def execute(self, artifact_id: str) -> list[ExtractionRun]:
-        return list(self.extractions.list_for_artifact(artifact_id))
+    def execute(self, artifact_id: str, limit: int | None = None) -> list[ExtractionRun]:
+        return list(self.extractions.list_for_artifact(artifact_id, limit=limit))

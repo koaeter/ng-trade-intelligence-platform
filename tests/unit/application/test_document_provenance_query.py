@@ -12,27 +12,27 @@ class Item:
 
 class Memory:
     def __init__(self, items): self.items = items
-    def list_for_document(self, document_id):
+    def list_for_document(self, document_id, limit=None):
         return [x for x in self.items if x.document_id == document_id]
-    def list_for_document_version(self, version_id):
+    def list_for_document_version(self, version_id, limit=None):
         return [x for x in self.items if x.document_version_id == version_id]
-    def list_for_version(self, version_id):
+    def list_for_version(self, version_id, limit=None):
         return [
             x for x in self.items
             if x.from_version_id == version_id or x.to_version_id == version_id
         ]
-    def list_for_artifact(self, artifact_id):
+    def list_for_artifact(self, artifact_id, limit=None):
         return [x for x in self.items if x.artifact_id == artifact_id]
-    def list_for_extraction(self, extraction_id):
+    def list_for_extraction(self, extraction_id, limit=None):
         return [
             x for x in self.items
             if getattr(x, "extraction_id", None) == extraction_id
             or getattr(x, "baseline_extraction_id", None) == extraction_id
             or getattr(x, "candidate_extraction_id", None) == extraction_id
         ]
-    def list_for_comparison(self, comparison_id):
+    def list_for_comparison(self, comparison_id, limit=None):
         return [x for x in self.items if x.comparison_id == comparison_id]
-    def list_for_diff(self, diff_id): return [x for x in self.items if x.diff_id == diff_id]
+    def list_for_diff(self, diff_id, limit=None): return [x for x in self.items if x.diff_id == diff_id]
 
 
 def test_get_document_provenance_builds_complete_processing_chain():

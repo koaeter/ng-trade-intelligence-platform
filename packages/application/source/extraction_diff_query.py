@@ -31,5 +31,5 @@ class ListExtractionDiffs:
     def __init__(self, diffs: ExtractionDiffRepository) -> None:
         self.diffs = diffs
 
-    def execute(self, comparison_id: str) -> list[ExtractionDiff]:
-        return list(self.diffs.list_for_comparison(comparison_id))
+    def execute(self, comparison_id: str, limit: int | None = None) -> list[ExtractionDiff]:
+        return list(self.diffs.list_for_comparison(comparison_id, limit=limit))

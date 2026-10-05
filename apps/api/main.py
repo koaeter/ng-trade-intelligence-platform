@@ -898,12 +898,16 @@ def create_source(payload: SourceRequest, session: Session = Depends(get_session
 
 
 @app.get("/api/v1/sources/{source_id}/acquisition-events", response_model=list[AcquisitionEventResponse], tags=["sources"])
-def list_source_acquisition_events(source_id: str, session: Session = Depends(get_session)) -> list[AcquisitionEventResponse]:
+def list_source_acquisition_events(
+    source_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[AcquisitionEventResponse]:
     if SqlAlchemySourceRepository(session).get(source_id) is None:
         raise HTTPException(status_code=404, detail="Source not found")
     events = GetSourceAcquisitionHistory(
         SqlAlchemyAcquisitionEventRepository(session)
-    ).execute(source_id)
+    ).execute(source_id, limit=limit)
     return [
         AcquisitionEventResponse(
             id=x.id,

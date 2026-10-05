@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 from datetime import date
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -315,6 +315,7 @@ class DocumentProvenanceResponse(BaseModel):
     comparisons_by_extraction: dict[str, list[ExtractionComparisonResponse]]
     diffs_by_comparison: dict[str, list[ExtractionDiffSummaryResponse]]
     diff_entries_by_diff: dict[str, list[ExtractionDiffEntryResponse]]
+    truncated_collections: list[str]
 
 
 
@@ -519,6 +520,7 @@ def get_document_provenance_summary(
 @app.get("/api/v1/documents/{document_id}/provenance", response_model=DocumentProvenanceResponse, tags=["sources"])
 def get_document_provenance(
     document_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
 ) -> DocumentProvenanceResponse:
     if SqlAlchemyDocumentRepository(session).get(document_id) is None:
@@ -532,7 +534,7 @@ def get_document_provenance(
         SqlAlchemyExtractionComparisonRepository(session),
         SqlAlchemyExtractionDiffRepository(session),
         SqlAlchemyExtractionDiffEntryRepository(session),
-    ).execute(document_id)
+    ).execute(document_id, limit=limit)
     return DocumentProvenanceResponse(
         document_id=document_id,
         versions=[_document_version_response(version) for version in view.versions],
@@ -582,6 +584,7 @@ def get_document_provenance(
             ]
             for diff_id, entries in view.diff_entries_by_diff.items()
         },
+        truncated_collections=list(view.truncated_collections),
     )
 
 

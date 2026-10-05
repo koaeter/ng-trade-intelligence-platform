@@ -20,7 +20,7 @@ class MemoryRelationships:
     def get(self, key):
         return self.items.get(key)
 
-    def list_for_version(self, version_id):
+    def list_for_version(self, version_id, limit=None):
         return [
             value
             for value in self.items.values()

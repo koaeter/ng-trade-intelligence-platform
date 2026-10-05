@@ -275,3 +275,46 @@ def test_get_document_provenance_summary_returns_404(monkeypatch):
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
+
+
+def test_get_document_provenance_accepts_limit_and_reports_truncation(monkeypatch):
+    class LimitedArtifactRepository(FakeArtifactRepository):
+        def list_for_document_version(self, version_id):
+            return [
+                FakeArtifact(),
+                type("SecondArtifact", (), {
+                    "id": "artifact-2",
+                    "source_id": "source-1",
+                    "document_id": "document-1",
+                    "kind": type("Kind", (), {"value": "PDF"})(),
+                    "storage_key": "key-2",
+                    "checksum_sha256": "checksum-2",
+                    "acquired_at": FakeArtifact.acquired_at,
+                    "mime_type": "application/pdf",
+                    "original_filename": "source-2.pdf",
+                    "processing_state": type("State", (), {"value": "ACQUIRED"})(),
+                    "acquisition_event_id": None,
+                    "document_version_id": "version-1",
+                })(),
+            ]
+
+    monkeypatch.setattr(api, "SqlAlchemyDocumentRepository", FakeDocumentRepository)
+    monkeypatch.setattr(api, "SqlAlchemyDocumentVersionRepository", FakeVersionRepository)
+    monkeypatch.setattr(api, "SqlAlchemySourceArtifactRepository", LimitedArtifactRepository)
+    monkeypatch.setattr(api, "SqlAlchemyDocumentRelationshipRepository", FakeRelationshipRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionRunRepository", FakeExtractionRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionSegmentRepository", FakeSegmentRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionComparisonRepository", FakeComparisonRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionDiffRepository", FakeDiffRepository)
+    monkeypatch.setattr(api, "SqlAlchemyExtractionDiffEntryRepository", FakeDiffEntryRepository)
+    app.dependency_overrides[api.get_session] = lambda: FakeSession()
+    try:
+        response = TestClient(app).get(
+            "/api/v1/documents/document-1/provenance?limit=1"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["artifacts_by_version"]["version-1"][0]["id"] == "artifact-1"
+    assert "artifacts_by_version:version-1" in response.json()["truncated_collections"]

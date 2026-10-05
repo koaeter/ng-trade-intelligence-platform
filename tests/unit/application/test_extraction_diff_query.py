@@ -12,13 +12,13 @@ class DiffRepo:
     def __init__(self, values=None): self.values = values or []
     def get(self, diff_id):
         return next((x for x in self.values if x.id == diff_id), None)
-    def list_for_comparison(self, comparison_id):
+    def list_for_comparison(self, comparison_id, limit=None):
         return [x for x in self.values if x.comparison_id == comparison_id]
 
 
 class EntryRepo:
     def __init__(self, values=None): self.values = values or []
-    def list_for_diff(self, diff_id):
+    def list_for_diff(self, diff_id, limit=None):
         return [x for x in self.values if x.diff_id == diff_id]
 
 

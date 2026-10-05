@@ -77,7 +77,7 @@ class FakeComparisonRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_extraction(self, extraction_id):
+    def list_for_extraction(self, extraction_id, limit=None):
         return [FakeComparison()] if extraction_id == "extraction-1" else []
 
 
@@ -121,7 +121,7 @@ class FakeDiffEntryRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_diff(self, diff_id):
+    def list_for_diff(self, diff_id, limit=None):
         return [FakeDiffEntry()] if diff_id == "diff-1" else []
 
 
@@ -129,7 +129,7 @@ class FakeDiffRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_comparison(self, comparison_id):
+    def list_for_comparison(self, comparison_id, limit=None):
         return [FakeDiff()] if comparison_id == "comparison-1" else []
 
 
@@ -137,7 +137,7 @@ class FakeSegmentRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_extraction(self, extraction_id):
+    def list_for_extraction(self, extraction_id, limit=None):
         return [FakeSegment()] if extraction_id == "extraction-1" else []
 
 
@@ -145,7 +145,7 @@ class FakeExtractionRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_artifact(self, artifact_id):
+    def list_for_artifact(self, artifact_id, limit=None):
         return [FakeExtraction()] if artifact_id == "artifact-1" else []
 
 
@@ -171,7 +171,7 @@ class FakeVersionRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_document(self, document_id):
+    def list_for_document(self, document_id, limit=None):
         return [FakeVersion()] if document_id == "document-1" else []
 
 
@@ -179,7 +179,7 @@ class FakeArtifactRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_document_version(self, version_id):
+    def list_for_document_version(self, version_id, limit=None):
         return [FakeArtifact()] if version_id == "version-1" else []
 
 
@@ -187,7 +187,7 @@ class FakeRelationshipRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_version(self, version_id):
+    def list_for_version(self, version_id, limit=None):
         return [FakeRelationship()] if version_id == "version-1" else []
 
 
@@ -267,7 +267,8 @@ def test_get_document_provenance_summary(monkeypatch):
 
 
 def test_get_document_provenance_summary_returns_404(monkeypatch):
-    monkeypatch.setattr(\n        api,\n        "SqlAlchemyDocumentProvenanceSummaryRepository",\n        FakeProvenanceSummaryRepository,\n    )
+    monkeypatch.setattr(
+        api,\n        "SqlAlchemyDocumentProvenanceSummaryRepository",\n        FakeProvenanceSummaryRepository,\n    )
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/missing/provenance/summary")

@@ -8,7 +8,7 @@ class MemoryArtifacts:
     def add(self, value):
         self.items.append(value)
 
-    def list_for_document_version(self, version_id):
+    def list_for_document_version(self, version_id, limit=None):
         return [value for value in self.items if value.document_version_id == version_id]
 
 

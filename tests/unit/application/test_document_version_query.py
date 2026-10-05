@@ -17,7 +17,7 @@ class VersionRepo:
     def get(self, version_id):
         return next((x for x in self.values if x.id == version_id), None)
 
-    def list_for_document(self, document_id):
+    def list_for_document(self, document_id, limit=None):
         return [x for x in self.values if x.document_id == document_id]
 
 

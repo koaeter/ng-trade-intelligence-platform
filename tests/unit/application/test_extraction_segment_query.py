@@ -18,10 +18,10 @@ class SegmentRepo:
     def get(self, segment_id):
         return next((x for x in self.values if x.id == segment_id), None)
 
-    def list_for_artifact(self, artifact_id):
+    def list_for_artifact(self, artifact_id, limit=None):
         return [x for x in self.values if x.artifact_id == artifact_id]
 
-    def list_for_extraction(self, extraction_id):
+    def list_for_extraction(self, extraction_id, limit=None):
         return [x for x in self.values if x.extraction_id == extraction_id]
 
 

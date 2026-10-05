@@ -21,5 +21,5 @@ class ListDocumentVersions:
     def __init__(self, versions: DocumentVersionRepository) -> None:
         self.versions = versions
 
-    def execute(self, document_id: str) -> list[DocumentVersion]:
-        return list(self.versions.list_for_document(document_id))
+    def execute(self, document_id: str, limit: int | None = None) -> list[DocumentVersion]:
+        return list(self.versions.list_for_document(document_id, limit=limit))

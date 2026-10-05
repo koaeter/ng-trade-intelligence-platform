@@ -616,13 +616,14 @@ def get_document_relationship(
 @app.get("/api/v1/document-versions/{version_id}/relationships", response_model=list[DocumentRelationshipResponse], tags=["sources"])
 def list_document_relationships(
     version_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
 ) -> list[DocumentRelationshipResponse]:
     if SqlAlchemyDocumentVersionRepository(session).get(version_id) is None:
         raise HTTPException(status_code=404, detail="Document version not found")
     relationships = ListDocumentRelationships(
         SqlAlchemyDocumentRelationshipRepository(session)
-    ).execute(version_id)
+    ).execute(version_id, limit=limit)
     return [_document_relationship_response(relationship) for relationship in relationships]
 
 
@@ -638,10 +639,14 @@ def get_document_version(version_id: str, session: Session = Depends(get_session
 
 
 @app.get("/api/v1/documents/{document_id}/versions", response_model=list[DocumentVersionResponse], tags=["sources"])
-def list_document_versions(document_id: str, session: Session = Depends(get_session)) -> list[DocumentVersionResponse]:
+def list_document_versions(
+    document_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[DocumentVersionResponse]:
     versions = ListDocumentVersions(
         SqlAlchemyDocumentVersionRepository(session)
-    ).execute(document_id)
+    ).execute(document_id, limit=limit)
     return [_document_version_response(version) for version in versions]
 
 
@@ -659,13 +664,14 @@ def get_extracted_text(artifact_id: str, session: Session = Depends(get_session)
 @app.get("/api/v1/document-versions/{version_id}/artifacts", response_model=list[SourceArtifactResponse], tags=["sources"])
 def list_document_version_artifacts(
     version_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
 ) -> list[SourceArtifactResponse]:
     if SqlAlchemyDocumentVersionRepository(session).get(version_id) is None:
         raise HTTPException(status_code=404, detail="Document version not found")
     artifacts = ListSourceArtifactsForDocumentVersion(
         SqlAlchemySourceArtifactRepository(session)
-    ).execute(version_id)
+    ).execute(version_id, limit=limit)
     return [_source_artifact_response(artifact) for artifact in artifacts]
 
 
@@ -682,10 +688,14 @@ def get_source_artifact(artifact_id: str, session: Session = Depends(get_session
 
 
 @app.get("/api/v1/source-artifacts/{artifact_id}/extraction-runs", response_model=list[ExtractionRunResponse], tags=["extraction"])
-def list_extraction_runs_for_artifact(artifact_id: str, session: Session = Depends(get_session)) -> list[ExtractionRunResponse]:
+def list_extraction_runs_for_artifact(
+    artifact_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[ExtractionRunResponse]:
     runs = ListExtractionRunsForArtifact(
         SqlAlchemyExtractionRunRepository(session)
-    ).execute(artifact_id)
+    ).execute(artifact_id, limit=limit)
     return [_extraction_run_response(extraction) for extraction in runs]
 
 
@@ -701,10 +711,14 @@ def get_extraction_segment(segment_id: str, session: Session = Depends(get_sessi
 
 
 @app.get("/api/v1/extraction-runs/{extraction_id}/segments", response_model=list[ExtractionSegmentResponse], tags=["extraction"])
-def list_extraction_segments(extraction_id: str, session: Session = Depends(get_session)) -> list[ExtractionSegmentResponse]:
+def list_extraction_segments(
+    extraction_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[ExtractionSegmentResponse]:
     segments = ListExtractionSegments(
         SqlAlchemyExtractionSegmentRepository(session)
-    ).execute(extraction_id)
+    ).execute(extraction_id, limit=limit)
     return [_extraction_segment_response(segment) for segment in segments]
 
 
@@ -746,11 +760,15 @@ def get_extraction_diff(diff_id: str, session: Session = Depends(get_session)) -
 
 
 @app.get("/api/v1/extraction-comparisons/{comparison_id}/diffs", response_model=list[ExtractionDiffSummaryResponse], tags=["extraction"])
-def list_extraction_diffs(comparison_id: str, session: Session = Depends(get_session)) -> list[ExtractionDiffSummaryResponse]:
+def list_extraction_diffs(
+    comparison_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[ExtractionDiffSummaryResponse]:
     comparison = SqlAlchemyExtractionComparisonRepository(session).get(comparison_id)
     if comparison is None:
         raise HTTPException(status_code=404, detail="Extraction comparison not found")
-    diffs = ListExtractionDiffs(SqlAlchemyExtractionDiffRepository(session)).execute(comparison_id)
+    diffs = ListExtractionDiffs(SqlAlchemyExtractionDiffRepository(session)).execute(comparison_id, limit=limit)
     return [_extraction_diff_summary_response(diff) for diff in diffs]
 
 

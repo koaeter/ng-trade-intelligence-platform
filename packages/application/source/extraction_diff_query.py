@@ -14,15 +14,20 @@ class GetExtractionDiff:
         self.diffs = diffs
         self.entries = entries
 
-    def execute(self, diff_id: str) -> tuple[ExtractionDiff, list[ExtractionDiffEntry]]:
+    def execute(self, diff_id: str, entry_limit: int | None = None) -> tuple[ExtractionDiff, list[ExtractionDiffEntry], bool]:
+        if entry_limit is not None and entry_limit < 1:
+            raise ValueError("entry_limit must be at least 1")
         diff = self.diffs.get(diff_id)
         if diff is None:
             raise ValueError("Extraction diff does not exist")
         entries = sorted(
-            self.entries.list_for_diff(diff.id),
+            self.entries.list_for_diff(diff.id, limit=(entry_limit + 1 if entry_limit is not None else None)),
             key=lambda entry: entry.ordinal,
         )
-        return diff, entries
+        truncated = entry_limit is not None and len(entries) > entry_limit
+        if entry_limit is not None:
+            entries = entries[:entry_limit]
+        return diff, entries, truncated
 
 
 class ListExtractionDiffs:

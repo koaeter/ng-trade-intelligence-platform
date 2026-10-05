@@ -190,7 +190,7 @@ class SqlAlchemyDocumentRelationshipRepository:
             row.note,
         )
 
-    def list_for_version(self, version_id: str) -> list[DocumentRelationship]:
+    def list_for_version(self, version_id: str, limit: int | None = None) -> list[DocumentRelationship]:
         rows = self._session.scalars(
             select(DocumentRelationshipModel)
             .where(
@@ -198,7 +198,7 @@ class SqlAlchemyDocumentRelationshipRepository:
                 | (DocumentRelationshipModel.to_version_id == version_id)
             )
             .order_by(DocumentRelationshipModel.id)
-        ).all()
+        ).limit(limit).all()
         return [
             DocumentRelationship(
                 row.id,
@@ -239,12 +239,12 @@ class SqlAlchemyDocumentVersionRepository:
             row.revision_reference,
         )
 
-    def list_for_document(self, document_id: str) -> list[DocumentVersion]:
+    def list_for_document(self, document_id: str, limit: int | None = None) -> list[DocumentVersion]:
         rows = self._session.scalars(
             select(DocumentVersionModel)
             .where(DocumentVersionModel.document_id == document_id)
             .order_by(DocumentVersionModel.effective_from, DocumentVersionModel.id)
-        ).all()
+        ).limit(limit).all()
         return [
             DocumentVersion(
                 row.id, row.document_id, row.version_label,
@@ -349,12 +349,12 @@ class SqlAlchemySourceArtifactRepository(SourceArtifactRepository):
             row.acquisition_event_id, row.document_version_id,
         )
 
-    def list_for_document_version(self, document_version_id: str) -> list[SourceArtifact]:
+    def list_for_document_version(self, document_version_id: str, limit: int | None = None) -> list[SourceArtifact]:
         rows = self._session.scalars(
             select(SourceArtifactModel).where(
                 SourceArtifactModel.document_version_id == document_version_id
             ).order_by(SourceArtifactModel.acquired_at, SourceArtifactModel.id)
-        ).all()
+        ).limit(limit).all()
         return [
             SourceArtifact(
                 row.id, row.source_id, row.document_id, ArtifactKind(row.kind),
@@ -425,7 +425,7 @@ class SqlAlchemyExtractionComparisonRepository(ExtractionComparisonRepository):
             row.baseline_output_sha256, row.candidate_output_sha256,
             ExtractionComparisonResult(row.result), row.compared_at,
         )
-    def list_for_extraction(self, extraction_id: str) -> list[ExtractionComparison]:
+    def list_for_extraction(self, extraction_id: str, limit: int | None = None) -> list[ExtractionComparison]:
         rows = self._session.scalars(
             select(ExtractionComparisonModel)
             .where(
@@ -433,7 +433,7 @@ class SqlAlchemyExtractionComparisonRepository(ExtractionComparisonRepository):
                 | (ExtractionComparisonModel.candidate_extraction_id == extraction_id)
             )
             .order_by(ExtractionComparisonModel.compared_at, ExtractionComparisonModel.id)
-        ).all()
+        ).limit(limit).all()
         return [
             ExtractionComparison(
                 row.id,
@@ -478,12 +478,12 @@ class SqlAlchemyExtractionRunRepository(ExtractionRunRepository):
             row.extracted_at, row.ocr_used,
         )
 
-    def list_for_artifact(self, artifact_id: str) -> list[ExtractionRun]:
+    def list_for_artifact(self, artifact_id: str, limit: int | None = None) -> list[ExtractionRun]:
         rows = self._session.scalars(
             select(ExtractionRunModel)
             .where(ExtractionRunModel.artifact_id == artifact_id)
             .order_by(ExtractionRunModel.extracted_at, ExtractionRunModel.id)
-        ).all()
+        ).limit(limit).all()
         return [
             ExtractionRun(
                 row.id, row.artifact_id, row.document_version_id,
@@ -528,7 +528,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
             select(ExtractionSegmentModel)
             .where(ExtractionSegmentModel.artifact_id == artifact_id)
             .order_by(ExtractionSegmentModel.sequence)
-        ).all()
+        ).limit(limit).all()
         return [
             ExtractionSegment(
                 row.id, row.artifact_id, row.sequence, row.text,
@@ -539,7 +539,7 @@ class SqlAlchemyExtractionSegmentRepository(ExtractionSegmentRepository):
         ]
 
 
-    def list_for_extraction(self, extraction_id: str) -> list[ExtractionSegment]:
+    def list_for_extraction(self, extraction_id: str, limit: int | None = None) -> list[ExtractionSegment]:
         rows = self._session.scalars(
             select(ExtractionSegmentModel)
             .where(ExtractionSegmentModel.extraction_id == extraction_id)
@@ -581,12 +581,12 @@ class SqlAlchemyExtractionDiffRepository(ExtractionDiffRepository):
             row.candidate_extraction_id, row.entry_count, row.unchanged_count,
             row.added_count, row.removed_count, row.modified_count, row.created_at)
 
-    def list_for_comparison(self, comparison_id: str) -> list[ExtractionDiff]:
+    def list_for_comparison(self, comparison_id: str, limit: int | None = None) -> list[ExtractionDiff]:
         rows = self._session.scalars(
             select(ExtractionDiffModel)
             .where(ExtractionDiffModel.comparison_id == comparison_id)
             .order_by(ExtractionDiffModel.created_at, ExtractionDiffModel.id)
-        ).all()
+        ).limit(limit).all()
         return [ExtractionDiff(row.id, row.comparison_id, row.baseline_extraction_id,
             row.candidate_extraction_id, row.entry_count, row.unchanged_count,
             row.added_count, row.removed_count, row.modified_count, row.created_at)
@@ -614,12 +614,12 @@ class SqlAlchemyExtractionDiffEntryRepository(ExtractionDiffEntryRepository):
         ))
         self._session.flush()
 
-    def list_for_diff(self, diff_id: str) -> list[ExtractionDiffEntry]:
+    def list_for_diff(self, diff_id: str, limit: int | None = None) -> list[ExtractionDiffEntry]:
         rows = self._session.scalars(
             select(ExtractionDiffEntryModel)
             .where(ExtractionDiffEntryModel.diff_id == diff_id)
             .order_by(ExtractionDiffEntryModel.ordinal, ExtractionDiffEntryModel.id)
-        ).all()
+        ).limit(limit).all()
         return [ExtractionDiffEntry(
             row.id, row.diff_id, ExtractionDiffEntryType(row.entry_type), row.ordinal,
             row.baseline_segment_id, row.candidate_segment_id, row.baseline_sequence,

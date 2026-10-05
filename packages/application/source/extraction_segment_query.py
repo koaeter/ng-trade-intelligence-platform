@@ -21,5 +21,5 @@ class ListExtractionSegments:
     def __init__(self, segments: ExtractionSegmentRepository) -> None:
         self.segments = segments
 
-    def execute(self, extraction_id: str) -> list[ExtractionSegment]:
-        return list(self.segments.list_for_extraction(extraction_id))
+    def execute(self, extraction_id: str, limit: int | None = None) -> list[ExtractionSegment]:
+        return list(self.segments.list_for_extraction(extraction_id, limit=limit))

@@ -17,5 +17,5 @@ class AcquisitionEventRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_for_source(self, source_id: str) -> list[AcquisitionEvent]:
+    def list_for_source(self, source_id: str, limit: int | None = None) -> list[AcquisitionEvent]:
         raise NotImplementedError

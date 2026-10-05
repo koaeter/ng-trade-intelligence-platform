@@ -5,5 +5,5 @@ class GetSourceAcquisitionHistory:
     def __init__(self, events: AcquisitionEventRepository) -> None:
         self.events = events
 
-    def execute(self, source_id: str):
-        return self.events.list_for_source(source_id)
+    def execute(self, source_id: str, limit: int | None = None):
+        return self.events.list_for_source(source_id, limit=limit)

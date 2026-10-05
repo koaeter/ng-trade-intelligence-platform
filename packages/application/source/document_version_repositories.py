@@ -13,5 +13,5 @@ class DocumentVersionRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_for_document(self, document_id: str) -> list[DocumentVersion]:
+    def list_for_document(self, document_id: str, limit: int | None = None) -> list[DocumentVersion]:
         raise NotImplementedError

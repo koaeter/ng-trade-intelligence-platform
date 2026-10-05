@@ -279,6 +279,7 @@ class ExtractionDiffResponse(BaseModel):
     modified_count: int
     created_at: str
     entries: list[ExtractionDiffEntryResponse]
+    entries_truncated: bool
 
 
 class ExtractionDiffSummaryResponse(BaseModel):
@@ -745,17 +746,22 @@ def get_extraction_comparison(comparison_id: str, session: Session = Depends(get
 
 
 @app.get("/api/v1/extraction-diffs/{diff_id}", response_model=ExtractionDiffResponse, tags=["extraction"])
-def get_extraction_diff(diff_id: str, session: Session = Depends(get_session)) -> ExtractionDiffResponse:
+def get_extraction_diff(
+    diff_id: str,
+    entry_limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> ExtractionDiffResponse:
     try:
-        diff, entries = GetExtractionDiff(
+        diff, entries, entries_truncated = GetExtractionDiff(
             SqlAlchemyExtractionDiffRepository(session),
             SqlAlchemyExtractionDiffEntryRepository(session),
-        ).execute(diff_id)
+        ).execute(diff_id, entry_limit=entry_limit)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return ExtractionDiffResponse(
         **_extraction_diff_summary_response(diff).model_dump(),
         entries=[_extraction_diff_entry_response(entry) for entry in entries],
+        entries_truncated=entries_truncated,
     )
 
 

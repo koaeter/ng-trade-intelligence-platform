@@ -55,7 +55,7 @@ class FakeDiffRepository:
     def get(self, diff_id: str):
         return FakeDiff(diff_id, "comparison-1") if diff_id == "diff-1" else None
 
-    def list_for_comparison(self, comparison_id: str):
+    def list_for_comparison(self, comparison_id: str, limit=None):
         return [FakeDiff("diff-1", comparison_id)]
 
 
@@ -63,7 +63,7 @@ class FakeEntryRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_diff(self, diff_id: str):
+    def list_for_diff(self, diff_id: str, limit=None):
         return [FakeEntry()]
 
 
@@ -234,7 +234,7 @@ class FakeSegmentRepository:
     def get(self, segment_id: str):
         return FakeSegment() if segment_id == "segment-1" else None
 
-    def list_for_extraction(self, extraction_id: str):
+    def list_for_extraction(self, extraction_id: str, limit=None):
         return [FakeSegment()] if extraction_id == "run-1" else []
 
 
@@ -332,7 +332,7 @@ class FakeRunListRepository:
     def __init__(self, session) -> None:
         pass
 
-    def list_for_artifact(self, artifact_id: str):
+    def list_for_artifact(self, artifact_id: str, limit=None):
         return [FakeRun()] if artifact_id == "artifact-1" else []
 
 

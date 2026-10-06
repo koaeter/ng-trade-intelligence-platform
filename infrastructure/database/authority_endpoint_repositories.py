@@ -52,7 +52,7 @@ class SqlAlchemyAuthorityEndpointRepository:
         row = self._session.get(AuthorityEndpointModel, endpoint_id)
         return None if row is None else self._to_domain(row)
 
-    def list_for_authority(self, authority_id: str) -> list[AuthorityEndpoint]:
+    def list_for_authority(self, authority_id: str, limit: int | None = None) -> list[AuthorityEndpoint]:
         rows = self._session.scalars(
             select(AuthorityEndpointModel)
             .where(
@@ -60,5 +60,5 @@ class SqlAlchemyAuthorityEndpointRepository:
                 AuthorityEndpointModel.active.is_(True),
             )
             .order_by(AuthorityEndpointModel.endpoint_type, AuthorityEndpointModel.url)
-        ).all()
+        ).limit(limit).all()
         return [self._to_domain(row) for row in rows]

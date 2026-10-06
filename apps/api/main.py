@@ -18,7 +18,6 @@ from infrastructure.database.repositories import (
     SqlAlchemyProvisionRepository,
     SqlAlchemyRequirementRepository,
     SqlAlchemySourceRepository,
-    SqlAlchemyAuthorityEndpointRepository,
     SqlAlchemyAcquisitionEventRepository,
     SqlAlchemyExtractionComparisonRepository,
     SqlAlchemyExtractionDiffRepository,
@@ -32,6 +31,7 @@ from infrastructure.database.repositories import (
 )
 from infrastructure.database.session import get_session
 from infrastructure.database.document_provenance import SqlAlchemyDocumentProvenanceSummaryRepository
+from infrastructure.database.authority_endpoint_repositories import SqlAlchemyAuthorityEndpointRepository
 from infrastructure.acquisition.http import HTTPSourceFetcher
 from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
 from packages.application.source.register_source import RegisterSourceFromEndpoint
@@ -855,8 +855,12 @@ def verify_authority_endpoint(endpoint_id: str, session: Session = Depends(get_s
 
 
 @app.get("/api/v1/authorities/{authority_id}/endpoints", response_model=list[AuthorityEndpointResponse], tags=["sources"])
-def list_authority_endpoints(authority_id: str, session: Session = Depends(get_session)) -> list[AuthorityEndpointResponse]:
-    endpoints = SqlAlchemyAuthorityEndpointRepository(session).list_for_authority(authority_id)
+def list_authority_endpoints(
+    authority_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_session),
+) -> list[AuthorityEndpointResponse]:
+    endpoints = SqlAlchemyAuthorityEndpointRepository(session).list_for_authority(authority_id, limit=limit)
     return [
         AuthorityEndpointResponse(
             id=x.id,
@@ -945,13 +949,6 @@ def create_document(payload: DocumentRequest, session: Session = Depends(get_ses
     document = Document(str(uuid4()), **payload.model_dump())
     SqlAlchemyDocumentRepository(session).add(document)
     session.commit()
-    return document
-
-
-@app.get("/api/v1/documents/{document_id}", tags=["sources"])
-def get_document(document_id: str, session: Session = Depends(get_session)):
-    document = SqlAlchemyDocumentRepository(session).get(document_id)
-    if document is None: raise HTTPException(status_code=404, detail="Document not found")
     return document
 
 

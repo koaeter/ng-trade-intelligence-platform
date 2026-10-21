@@ -22,6 +22,7 @@ def upgrade() -> None:
         ["status"],
         unique=True,
         postgresql_where=sa.text("status = 'ACTIVE'"),
+        sqlite_where=sa.text("status = 'ACTIVE'"),
     )
 
 

@@ -140,3 +140,68 @@ def test_permission_policy_requires_exact_permission():
     )
     with pytest.raises(AuthorizationError, match="Missing required permission"):
         require_permission(principal, "rule_set:activate")
+
+
+def test_successful_activation_records_actor_and_target_in_audit():
+    class AuditRepo:
+        def __init__(self):
+            self.events = []
+
+        def record(self, **event):
+            self.events.append(event)
+
+    repo = Repo()
+    audit = AuditRepo()
+    RuleSetVersionService(
+        repo,
+        Validator(),
+        audit_repository=audit,
+        actor_subject="keycloak-subject-7",
+    ).activate("new")
+
+    assert audit.events == [
+        {
+            "actor_subject": "keycloak-subject-7",
+            "action": "activate",
+            "target_rule_set_id": "new",
+            "outcome": "SUCCEEDED",
+        }
+    ]
+
+
+def test_lifecycle_auditing_requires_actor_before_mutating_state():
+    repo = Repo()
+    before = repo.items["draft"].status
+    with pytest.raises(ValueError, match="Actor subject is required"):
+        RuleSetVersionService(
+            repo,
+            Validator(),
+            audit_repository=object(),
+            actor_subject=" ",
+        ).validate("draft")
+    assert repo.items["draft"].status == before
+
+
+def test_failed_activation_does_not_record_success_audit():
+    class AuditRepo:
+        def __init__(self):
+            self.events = []
+
+        def record(self, **event):
+            self.events.append(event)
+
+    class RejectingValidator:
+        def validate(self, rule_set_id):
+            raise ValueError("invalid tree")
+
+    repo = Repo()
+    audit = AuditRepo()
+    with pytest.raises(ValueError, match="invalid tree"):
+        RuleSetVersionService(
+            repo,
+            RejectingValidator(),
+            audit_repository=audit,
+            actor_subject="keycloak-subject-7",
+        ).activate("new")
+    assert audit.events == []
+    assert repo.items["old"].status == RuleSetStatus.ACTIVE

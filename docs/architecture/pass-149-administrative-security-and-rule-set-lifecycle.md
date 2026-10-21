@@ -33,7 +33,7 @@ Before exposing them, choose and configure an identity provider/protocol (prefer
 
 ## Concurrency caveat
 
-The current activation sequence reads the active version and then performs status updates. It is safe within a single ordinary transaction but has not yet been proven race-safe under simultaneous activations. Before production activation endpoints are enabled, add database-enforced single-active semantics and concurrency/integration tests for competing activation requests. The initial migration's empty active seed also requires an explicit validated migration or replacement workflow rather than implicit legacy conversion.
+The repository now exposes one activation operation that locks existing active rows, retires them, activates the target, and flushes inside the caller's transaction. Migration 0037 adds a PostgreSQL partial unique index so no two rows can be ACTIVE concurrently. The database constraint is the final guard when two requests race, including when no active row existed at the start. PostgreSQL concurrency/integration tests and rollback behavior still need verification before production endpoints are enabled. If a deployment already has multiple ACTIVE rows, reconcile them before applying migration 0037. The initial migration's empty active seed also requires an explicit validated migration or replacement workflow rather than implicit legacy conversion.
 
 ## Next
 

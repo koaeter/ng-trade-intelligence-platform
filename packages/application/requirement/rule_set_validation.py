@@ -28,6 +28,6 @@ class RuleSetPublicationValidator:
                 raise ValueError("Rule-set membership and requirement revision disagree")
 
             self.materializer.materialize(revision)
-            nodes = self.rule_nodes.list_for_requirement(revision.requirement_id)
+            nodes = self.rule_nodes.list_for_revision(revision.id)
             if nodes:
                 self.loader.load(revision.requirement_id, revision.id, nodes)

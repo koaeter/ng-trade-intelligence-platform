@@ -16,6 +16,8 @@ class RuleSetAuthoringService:
             raise ValueError("Rule-set version is required")
         if not revision_ids:
             raise ValueError("A rule set requires at least one requirement revision")
+        if len(set(revision_ids)) != len(revision_ids):
+            raise ValueError("Duplicate requirement revision IDs are not allowed")
 
         resolved = []
         for revision_id in revision_ids:
@@ -23,6 +25,10 @@ class RuleSetAuthoringService:
             if revision is None:
                 raise ValueError(f"Requirement revision does not exist: {revision_id}")
             resolved.append(revision)
+
+        requirement_ids = [revision.requirement_id for revision in resolved]
+        if len(set(requirement_ids)) != len(requirement_ids):
+            raise ValueError("A rule set can include only one revision per requirement")
 
         rule_set = RuleSetVersion(
             id=str(uuid4()),

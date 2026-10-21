@@ -41,13 +41,28 @@ class ScenarioEvaluationOrchestrator:
             raise ValueError("No active rule set is configured")
         results = []
         for requirement in self.requirements.list_all():
-            evidence = tuple(
-                item
-                for evidence_id in requirement.evidence_ids
-                if (item := self.evidence.get(evidence_id)) is not None
+            # Only skip dependent repository reads when a domain-level fact
+            # proves the requirement cannot apply. Unknown scope is not excluded.
+            temporally_inactive = not requirement.is_effective_on(scenario.scenario_date)
+            scope = requirement.scope_matches(
+                scenario.product,
+                scenario.hs_code,
+                scenario.origin_country,
+                scenario.destination_market,
             )
-            nodes = self.rule_nodes.list_for_requirement(requirement.id)
-            tree = self.loader.load(requirement.id, nodes) if nodes else None
+            definitely_out_of_scope = scope is False
+            if temporally_inactive or definitely_out_of_scope:
+                evidence = ()
+                tree = None
+            else:
+                evidence = tuple(
+                    item
+                    for evidence_id in requirement.evidence_ids
+                    if (item := self.evidence.get(evidence_id)) is not None
+                )
+                nodes = self.rule_nodes.list_for_requirement(requirement.id)
+                tree = self.loader.load(requirement.id, nodes) if nodes else None
+
             trace = self.evaluator.evaluate(
                 scenario,
                 requirement,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from packages.domain.requirement.rule_set_membership import RuleSetRequirementMembership
@@ -34,7 +34,7 @@ class RuleSetAuthoringService:
             id=str(uuid4()),
             version=version,
             status=RuleSetStatus.DRAFT,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self.rule_sets.add(rule_set)
         for revision in resolved:

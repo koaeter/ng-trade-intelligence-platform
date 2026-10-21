@@ -89,3 +89,47 @@ def test_rule_set_audit_rejects_invalid_event_metadata(kwargs, message):
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+
+def test_failed_lifecycle_attempt_is_written_in_independent_committed_transaction():
+    from sqlalchemy.orm import sessionmaker
+
+    from infrastructure.database.models import RuleSetAuditEventModel
+    from infrastructure.database.rule_set_audit_writer import (
+        record_failed_rule_set_operation,
+    )
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    try:
+        with factory() as session:
+            session.add(
+                RuleSetVersionModel(
+                    id="rs-fail",
+                    version="2026.12",
+                    status="DRAFT",
+                    created_at=datetime(2026, 10, 21, tzinfo=UTC),
+                )
+            )
+            session.commit()
+
+        event_id = record_failed_rule_set_operation(
+            factory,
+            actor_subject="keycloak-subject-9",
+            action="validate",
+            target_rule_set_id="rs-fail",
+            detail="Validation rejected: missing evidence mapping",
+        )
+
+        with factory() as session:
+            event = session.get(RuleSetAuditEventModel, event_id)
+            assert event is not None
+            assert event.outcome == "FAILED"
+            assert event.action == "validate"
+            assert event.actor_subject == "keycloak-subject-9"
+            assert "missing evidence mapping" in event.detail
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()

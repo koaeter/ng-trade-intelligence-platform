@@ -59,3 +59,43 @@ def test_keycloak_verifier_rejects_blank_token():
 def test_keycloak_verifier_requires_issuer_and_audience():
     with pytest.raises(KeycloakConfigurationError, match="must be configured"):
         KeycloakTokenVerifier("", "trade-api")
+
+
+def test_keycloak_verifier_checks_real_signature_issuer_audience_and_expiry():
+    from datetime import UTC, datetime, timedelta
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    instance = verifier()
+    instance._jwks = Mock()
+    instance._jwks.get_signing_key_from_jwt.return_value.key = public_key
+    now = datetime.now(UTC)
+
+    def token(**overrides):
+        claims = {
+            "sub": "real-user",
+            "iss": "https://identity.example/realms/trade",
+            "aud": "trade-api",
+            "iat": now,
+            "exp": now + timedelta(minutes=5),
+            "realm_access": {"roles": ["rule-set-reader"]},
+        }
+        claims.update(overrides)
+        return jwt.encode(claims, private_key, algorithm="RS256")
+
+    principal = instance.verify(token())
+    assert principal.subject == "real-user"
+    assert principal.permissions == frozenset({"rule_set:read"})
+
+    with pytest.raises(AuthorizationError, match="Invalid or untrusted"):
+        instance.verify(token(iss="https://attacker.example/realms/other"))
+    with pytest.raises(AuthorizationError, match="Invalid or untrusted"):
+        instance.verify(token(aud="other-api"))
+    with pytest.raises(AuthorizationError, match="Invalid or untrusted"):
+        instance.verify(token(exp=now - timedelta(seconds=1)))

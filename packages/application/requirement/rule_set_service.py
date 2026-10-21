@@ -38,7 +38,7 @@ class RuleSetVersionService:
         # Revalidate at activation: a previously validated draft must not bypass
         # current integrity checks immediately before becoming the active policy.
         self.validator.validate(target.id)
-        active = self.repository.get_active()
-        if active is not None and active.id != target.id:
-            self.repository.set_status(active.id, RuleSetStatus.RETIRED)
-        self.repository.set_status(target.id, RuleSetStatus.ACTIVE)
+        activate = getattr(self.repository, "activate", None)
+        if activate is None:
+            raise ValueError("Atomic rule-set activation is not supported by this repository")
+        activate(target.id)

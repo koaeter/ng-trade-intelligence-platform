@@ -117,3 +117,43 @@ def test_database_index_rejects_two_active_rule_sets():
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+def test_rule_set_activation_and_audit_roll_back_together():
+    from infrastructure.database.models import RuleSetAuditEventModel
+    from infrastructure.database.repositories import SqlAlchemyRuleSetAuditRepository
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as session:
+            now = datetime.now(UTC)
+            session.add_all([
+                RuleSetVersionModel(
+                    id="old", version="2026.11.1", status="ACTIVE", created_at=now
+                ),
+                RuleSetVersionModel(
+                    id="new", version="2026.11.2", status="PUBLISHED", created_at=now
+                ),
+            ])
+            session.commit()
+
+            SqlAlchemyRuleSetVersionRepository(session).activate("new")
+            SqlAlchemyRuleSetAuditRepository(session).record(
+                actor_subject="admin-subject",
+                action="activate",
+                target_rule_set_id="new",
+                outcome="SUCCEEDED",
+            )
+            session.rollback()
+
+            statuses = dict(
+                session.execute(
+                    select(RuleSetVersionModel.id, RuleSetVersionModel.status)
+                ).all()
+            )
+            assert statuses == {"old": "ACTIVE", "new": "PUBLISHED"}
+            assert session.query(RuleSetAuditEventModel).count() == 0
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()

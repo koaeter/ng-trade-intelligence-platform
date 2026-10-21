@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, JSON
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text, JSON, text
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
 
@@ -344,6 +344,15 @@ class RuleSetVersionModel(Base):
     version: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_rule_set_versions_single_active",
+            "status",
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+    )
 
  
 class RuleSetRequirementMembershipModel(Base):

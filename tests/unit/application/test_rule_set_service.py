@@ -9,9 +9,15 @@ from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
 class Repo:
     def __init__(self):
         self.items = {
-            "old": RuleSetVersion("old", "2026.1", RuleSetStatus.ACTIVE, datetime.now(UTC)),
-            "new": RuleSetVersion("new", "2026.2", RuleSetStatus.PUBLISHED, datetime.now(timezone.utc)),
-            "draft": RuleSetVersion("draft", "2026.3", RuleSetStatus.DRAFT, datetime.now(timezone.utc)),
+            "old": RuleSetVersion(
+                "old", "2026.1", RuleSetStatus.ACTIVE, datetime.now(UTC)
+            ),
+            "new": RuleSetVersion(
+                "new", "2026.2", RuleSetStatus.PUBLISHED, datetime.now(UTC)
+            ),
+            "draft": RuleSetVersion(
+                "draft", "2026.3", RuleSetStatus.DRAFT, datetime.now(UTC)
+            ),
         }
 
     def get(self, version_id):

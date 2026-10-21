@@ -108,3 +108,29 @@ def test_activation_does_not_retire_current_active_if_validation_fails():
         RuleSetVersionService(repo, RejectingValidator()).activate("new")
     assert repo.items["old"].status == RuleSetStatus.ACTIVE
     assert repo.items["new"].status == RuleSetStatus.PUBLISHED
+
+
+
+def test_permission_policy_rejects_missing_identity():
+    from packages.application.security.authorization import (
+        AuthorizationError,
+        require_permission,
+    )
+
+    with pytest.raises(AuthorizationError, match="Authentication is required"):
+        require_permission(None, "rule_set:activate")
+
+
+def test_permission_policy_requires_exact_permission():
+    from packages.application.security.authorization import (
+        AuthenticatedPrincipal,
+        AuthorizationError,
+        require_permission,
+    )
+
+    principal = AuthenticatedPrincipal(
+        subject="user-2",
+        permissions=frozenset({"rule_set:read"}),
+    )
+    with pytest.raises(AuthorizationError, match="Missing required permission"):
+        require_permission(principal, "rule_set:activate")

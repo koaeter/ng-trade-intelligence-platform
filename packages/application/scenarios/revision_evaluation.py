@@ -50,15 +50,28 @@ class RevisionAwareEvaluationService:
             if revision.requirement_id != membership.requirement_id:
                 raise ValueError("Rule-set membership and requirement revision disagree")
             requirement = self.materializer.materialize(revision)
-            evidence = tuple(
-                item
-                for evidence_id in requirement.evidence_ids
-                if (item := self.evidence.get(evidence_id)) is not None
+            temporally_inactive = not requirement.is_effective_on(scenario.scenario_date)
+            scope = requirement.scope_matches(
+                scenario.product,
+                scenario.hs_code,
+                scenario.origin_country,
+                scenario.destination_market,
             )
-            # Rule nodes are immutable revision-scoped data. Loading by the
-            # mutable requirement ID could mix nodes from different revisions.
-            nodes = self.rule_nodes.list_for_revision(revision.id)
-            tree = self.loader.load(requirement.id, revision.id, nodes) if nodes else None
+            # These are the only proven exclusions. Unknown scope remains
+            # eligible for full evaluation so requirements are not omitted.
+            if temporally_inactive or scope is False:
+                evidence = ()
+                tree = None
+            else:
+                evidence = tuple(
+                    item
+                    for evidence_id in requirement.evidence_ids
+                    if (item := self.evidence.get(evidence_id)) is not None
+                )
+                # Rule nodes are immutable revision-scoped data. Loading by
+                # the mutable requirement ID could mix different revisions.
+                nodes = self.rule_nodes.list_for_revision(revision.id)
+                tree = self.loader.load(requirement.id, revision.id, nodes) if nodes else None
             trace = self.evaluator.evaluate(
                 scenario, requirement, evidence, tree, facts or {}
             )

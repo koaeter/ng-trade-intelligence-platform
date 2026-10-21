@@ -42,8 +42,12 @@ class RevisionAwareEvaluationService:
         if rule_set is None:
             raise ValueError("No active rule set is configured")
 
+        memberships = self.memberships.list_for_rule_set(rule_set.id)
+        if not memberships:
+            raise ValueError("Active rule set contains no requirement memberships")
+
         results = []
-        for membership in self.memberships.list_for_rule_set(rule_set.id):
+        for membership in memberships:
             revision = self.revisions.get(membership.requirement_revision)
             if revision is None:
                 raise ValueError(f"Requirement revision does not exist: {membership.requirement_revision}")

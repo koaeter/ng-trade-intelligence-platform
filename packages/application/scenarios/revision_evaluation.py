@@ -53,7 +53,9 @@ class RevisionAwareEvaluationService:
                 for evidence_id in requirement.evidence_ids
                 if (item := self.evidence.get(evidence_id)) is not None
             )
-            nodes = self.rule_nodes.list_for_requirement(requirement.id)
+            # Rule nodes are immutable revision-scoped data. Loading by the
+            # mutable requirement ID could mix nodes from different revisions.
+            nodes = self.rule_nodes.list_for_revision(revision.id)
             tree = self.loader.load(requirement.id, revision.id, nodes) if nodes else None
             trace = self.evaluator.evaluate(
                 scenario, requirement, evidence, tree, facts or {}

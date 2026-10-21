@@ -1,6 +1,8 @@
 from datetime import UTC, date, datetime
 
+import pytest
 from sqlalchemy import create_engine, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from infrastructure.database.base import Base
@@ -89,6 +91,29 @@ def test_rule_set_activation_retires_previous_active_version_transactionally():
                 "new": RuleSetStatus.ACTIVE.value,
             }
             assert session.in_transaction()
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+
+def test_database_index_rejects_two_active_rule_sets():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as session:
+            now = datetime.now(UTC)
+            session.add_all([
+                RuleSetVersionModel(
+                    id="active-1", version="2026.10.1", status="ACTIVE", created_at=now
+                ),
+                RuleSetVersionModel(
+                    id="active-2", version="2026.10.2", status="ACTIVE", created_at=now
+                ),
+            ])
+            with pytest.raises(IntegrityError):
+                session.flush()
+            session.rollback()
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()

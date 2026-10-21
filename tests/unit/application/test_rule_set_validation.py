@@ -41,13 +41,16 @@ class Markets:
 
 
 class RuleNodes:
-    def list_for_requirement(self, key):
+    def list_for_revision(self, key):
         return []
 
+    def list_for_requirement(self, key):
+        raise AssertionError("Publication validation must load nodes by revision ID")
 
-def validator(revision):
+
+def validator(revision, memberships=None):
     return RuleSetPublicationValidator(
-        Memberships(), Revisions(revision), RuleNodes(),
+        memberships or Memberships(), Revisions(revision), RuleNodes(),
         Products(), HS(), Countries(), Markets(),
     )
 
@@ -63,3 +66,18 @@ def test_valid_rule_set_passes():
 def test_missing_revision_is_rejected():
     with pytest.raises(ValueError, match="missing requirement revision"):
         validator(None).validate("rs1")
+
+
+
+def test_membership_cannot_reference_another_requirements_revision():
+    revision = RequirementRevision(
+        "r1:1", "r1", "1", "Requirement", date(2026, 1, 1), None,
+        ("p1",), (("HS2022", "1801"),), ("NG",), ("DE",), ("e1",), False,
+    )
+
+    class MismatchedMemberships:
+        def list_for_rule_set(self, key):
+            return [RuleSetRequirementMembership("rs1", "r2", "r1:1")]
+
+    with pytest.raises(ValueError, match="membership and requirement revision disagree"):
+        validator(revision, MismatchedMemberships()).validate("rs1")

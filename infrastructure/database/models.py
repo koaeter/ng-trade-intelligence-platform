@@ -351,6 +351,7 @@ class RuleSetVersionModel(Base):
             "status",
             unique=True,
             postgresql_where=text("status = 'ACTIVE'"),
+            sqlite_where=text("status = 'ACTIVE'"),
         ),
     )
 

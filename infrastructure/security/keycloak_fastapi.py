@@ -7,14 +7,14 @@ write endpoints.
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from infrastructure.security.keycloak import (
+    KeycloakConfigurationError,
+    configured_keycloak_verifier,
+)
 from packages.application.security.authorization import (
     AuthenticatedPrincipal,
     AuthorizationError,
     require_permission,
-)
-from infrastructure.security.keycloak import (
-    KeycloakConfigurationError,
-    configured_keycloak_verifier,
 )
 
 _bearer = HTTPBearer(auto_error=False)

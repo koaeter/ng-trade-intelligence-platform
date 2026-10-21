@@ -47,6 +47,8 @@ class RevisionAwareEvaluationService:
             revision = self.revisions.get(membership.requirement_revision)
             if revision is None:
                 raise ValueError(f"Requirement revision does not exist: {membership.requirement_revision}")
+            if revision.requirement_id != membership.requirement_id:
+                raise ValueError("Rule-set membership and requirement revision disagree")
             requirement = self.materializer.materialize(revision)
             evidence = tuple(
                 item

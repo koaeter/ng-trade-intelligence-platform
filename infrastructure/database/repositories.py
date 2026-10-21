@@ -1086,7 +1086,28 @@ class SqlAlchemyRuleSetVersionRepository:
         row.status = status.value
         self._session.flush()
 
- 
+    def activate(self, version_id: str) -> None:
+        from packages.domain.requirement.rule_sets import RuleSetStatus
+
+        target = self._session.get(RuleSetVersionModel, version_id)
+        if target is None:
+            raise ValueError("Rule-set version does not exist")
+
+        active_rows = self._session.scalars(
+            select(RuleSetVersionModel)
+            .where(RuleSetVersionModel.status == RuleSetStatus.ACTIVE.value)
+            .with_for_update()
+        ).all()
+        for active in active_rows:
+            if active.id != target.id:
+                active.status = RuleSetStatus.RETIRED.value
+
+        target.status = RuleSetStatus.ACTIVE.value
+        # Flush within the caller's transaction; commit/rollback belongs to caller.
+        # The partial unique index is the final guard against concurrent activations.
+        self._session.flush()
+
+
 class SqlAlchemyRuleSetMembershipRepository:
     def __init__(self, session: Session) -> None:
         self._session = session

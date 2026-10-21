@@ -37,7 +37,10 @@ class Validator:
 
 def test_activation_retires_previous_active_version():
     repo = Repo()
-    RuleSetVersionService(repo).activate("new")
+    validator = Validator()
+    RuleSetVersionService(repo, validator).activate("new")
+
+    assert validator.called is True
 
     assert repo.items["new"].status == RuleSetStatus.ACTIVE
     assert repo.items["old"].status == RuleSetStatus.RETIRED
@@ -55,3 +58,47 @@ def test_validation_requires_validator_and_moves_draft_to_validated():
 def test_draft_cannot_be_activated():
     with pytest.raises(ValueError, match="published"):
         RuleSetVersionService(Repo()).activate("draft")
+
+
+
+def test_activation_fails_closed_without_publication_validator():
+    with pytest.raises(ValueError, match="validator is required"):
+        RuleSetVersionService(Repo()).activate("new")
+
+
+def test_validation_fails_closed_without_publication_validator():
+    with pytest.raises(ValueError, match="validator is required"):
+        RuleSetVersionService(Repo()).validate("draft")
+
+
+def test_publish_requires_validated_status():
+    repo = Repo()
+    with pytest.raises(ValueError, match="Only validated"):
+        RuleSetVersionService(repo).publish("draft")
+
+    repo.set_status("draft", RuleSetStatus.VALIDATED)
+    RuleSetVersionService(repo).publish("draft")
+    assert repo.items["draft"].status == RuleSetStatus.PUBLISHED
+
+
+def test_validation_does_not_change_status_if_validator_rejects():
+    class RejectingValidator:
+        def validate(self, rule_set_id):
+            raise ValueError("invalid membership")
+
+    repo = Repo()
+    with pytest.raises(ValueError, match="invalid membership"):
+        RuleSetVersionService(repo, RejectingValidator()).validate("draft")
+    assert repo.items["draft"].status == RuleSetStatus.DRAFT
+
+
+def test_activation_does_not_retire_current_active_if_validation_fails():
+    class RejectingValidator:
+        def validate(self, rule_set_id):
+            raise ValueError("invalid rule tree")
+
+    repo = Repo()
+    with pytest.raises(ValueError, match="invalid rule tree"):
+        RuleSetVersionService(repo, RejectingValidator()).activate("new")
+    assert repo.items["old"].status == RuleSetStatus.ACTIVE
+    assert repo.items["new"].status == RuleSetStatus.PUBLISHED

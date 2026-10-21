@@ -1,9 +1,11 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
 from infrastructure.database.models import (
-    ApplicabilityEvaluationModel, CountryModel, DocumentModel, EvidenceModel,
+    ApplicabilityEvaluationModel, CountryModel, DocumentModel, EvidenceModel, RuleSetAuditEventModel,
     ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
@@ -1047,6 +1049,57 @@ class SqlAlchemyApplicabilityTraceRepository:
         ]
 
  
+
+class SqlAlchemyRuleSetAuditRepository:
+    """Insert and query lifecycle audit events; intentionally exposes no update/delete API."""
+
+    ALLOWED_ACTIONS = frozenset(
+        {"draft.create", "validate", "publish", "activate", "retire"}
+    )
+    ALLOWED_OUTCOMES = frozenset({"SUCCEEDED", "FAILED"})
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def record(
+        self,
+        *,
+        actor_subject: str,
+        action: str,
+        target_rule_set_id: str,
+        outcome: str,
+        detail: str | None = None,
+        occurred_at: datetime | None = None,
+    ) -> str:
+        if not actor_subject.strip():
+            raise ValueError("Audit actor subject is required")
+        if action not in self.ALLOWED_ACTIONS:
+            raise ValueError("Unsupported rule-set audit action")
+        if outcome not in self.ALLOWED_OUTCOMES:
+            raise ValueError("Unsupported rule-set audit outcome")
+        event_id = str(uuid4())
+        self._session.add(
+            RuleSetAuditEventModel(
+                id=event_id,
+                actor_subject=actor_subject,
+                action=action,
+                target_rule_set_id=target_rule_set_id,
+                outcome=outcome,
+                occurred_at=occurred_at or datetime.now(UTC),
+                detail=detail,
+            )
+        )
+        self._session.flush()
+        return event_id
+
+    def list_for_target(self, target_rule_set_id: str):
+        return self._session.scalars(
+            select(RuleSetAuditEventModel)
+            .where(RuleSetAuditEventModel.target_rule_set_id == target_rule_set_id)
+            .order_by(RuleSetAuditEventModel.occurred_at, RuleSetAuditEventModel.id)
+        ).all()
+
+
 class SqlAlchemyRuleSetVersionRepository:
     def __init__(self, session: Session) -> None:
         self._session = session

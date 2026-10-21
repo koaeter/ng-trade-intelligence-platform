@@ -28,12 +28,18 @@ from infrastructure.database.repositories import (
     SqlAlchemyExtractionSegmentRepository,
     SqlAlchemyDocumentVersionRepository,
     SqlAlchemyDocumentRelationshipRepository,
+    SqlAlchemyRequirementRevisionRepository,
+    SqlAlchemyRequirementRuleNodeRepository,
+    SqlAlchemyRuleSetMembershipRepository,
+    SqlAlchemyRuleSetVersionRepository,
+    SqlAlchemyApplicabilityTraceRepository,
 )
 from infrastructure.database.session import get_session
 from infrastructure.database.document_provenance import SqlAlchemyDocumentProvenanceSummaryRepository
 from infrastructure.database.authority_endpoint_repositories import SqlAlchemyAuthorityEndpointRepository
 from infrastructure.acquisition.http import HTTPSourceFetcher
-from packages.application.scenarios.services import create_scenario, evaluate_scenario, get_scenario
+from packages.application.scenarios.services import create_scenario, get_scenario
+from packages.application.scenarios.revision_evaluation import RevisionAwareEvaluationService
 from packages.application.source.register_source import RegisterSourceFromEndpoint
 from packages.application.source.acquisition_history import GetSourceAcquisitionHistory
 from packages.application.source.verify_authority_endpoint import VerifyAuthorityEndpoint
@@ -807,10 +813,25 @@ def get_export_scenario(scenario_id: str, session: Session = Depends(get_session
 
 @app.post("/api/v1/export-scenarios/{scenario_id}/evaluate", response_model=list[EvaluationResponse], tags=["scenarios"])
 def evaluate_export_scenario(scenario_id: str, session: Session = Depends(get_session)) -> list[EvaluationResponse]:
+    service = RevisionAwareEvaluationService(
+        SqlAlchemyExportScenarioRepository(session),
+        SqlAlchemyRuleSetVersionRepository(session),
+        SqlAlchemyRuleSetMembershipRepository(session),
+        SqlAlchemyRequirementRevisionRepository(session),
+        SqlAlchemyRequirementRuleNodeRepository(session),
+        SqlAlchemyProductRepository(session),
+        SqlAlchemyHSCodeRepository(session),
+        SqlAlchemyCountryRepository(session),
+        SqlAlchemyMarketRepository(session),
+        SqlAlchemyEvidenceRepository(session),
+        SqlAlchemyApplicabilityEvaluationRepository(session),
+        SqlAlchemyApplicabilityTraceRepository(session),
+    )
     try:
-        evaluations = evaluate_scenario(SqlAlchemyExportScenarioRepository(session), SqlAlchemyRequirementRepository(session), SqlAlchemyApplicabilityEvaluationRepository(session), scenario_id, SqlAlchemyEvidenceRepository(session))
+        evaluations = service.evaluate(scenario_id)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        status_code = 409 if str(exc) == "No active rule set is configured" else 404
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
     session.commit()
     return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
 

@@ -1,15 +1,20 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from infrastructure.database.base import Base
 from infrastructure.database.models import (
     CountryModel, HSCodeModel, HSVersionModel, MarketModel, ProductModel,
+    RuleSetVersionModel,
 )
-from infrastructure.database.repositories import SqlAlchemyRequirementRepository
+from infrastructure.database.repositories import (
+    SqlAlchemyRequirementRepository,
+    SqlAlchemyRuleSetVersionRepository,
+)
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.requirement.models import Requirement
+from packages.domain.requirement.rule_sets import RuleSetStatus
 
 
 def test_list_all_bulk_loads_requirement_scope_and_evidence_links():
@@ -50,6 +55,40 @@ def test_list_all_bulk_loads_requirement_scope_and_evidence_links():
             assert scoped.destination_markets == frozenset({Market("DE", "Germany", "DE")})
             assert scoped.evidence_ids == ()
             assert results[1].scope_is_general is True
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+
+def test_rule_set_activation_retires_previous_active_version_transactionally():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as session:
+            now = datetime.now(UTC)
+            session.add_all([
+                RuleSetVersionModel(
+                    id="old", version="2026.1", status="ACTIVE", created_at=now
+                ),
+                RuleSetVersionModel(
+                    id="new", version="2026.2", status="PUBLISHED", created_at=now
+                ),
+            ])
+            session.flush()
+
+            SqlAlchemyRuleSetVersionRepository(session).activate("new")
+
+            statuses = dict(
+                session.execute(
+                    select(RuleSetVersionModel.id, RuleSetVersionModel.status)
+                ).all()
+            )
+            assert statuses == {
+                "old": RuleSetStatus.RETIRED.value,
+                "new": RuleSetStatus.ACTIVE.value,
+            }
+            assert session.in_transaction()
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()

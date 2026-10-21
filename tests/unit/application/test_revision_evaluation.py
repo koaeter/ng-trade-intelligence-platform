@@ -85,8 +85,15 @@ class EvidenceObject:
 
 
 class RuleNodes:
-    def list_for_requirement(self, key):
+    def __init__(self):
+        self.requested_revisions = []
+
+    def list_for_revision(self, key):
+        self.requested_revisions.append(key)
         return []
+
+    def list_for_requirement(self, key):
+        raise AssertionError("Revision-aware evaluation must not load nodes by requirement ID")
 
 
 class Evaluations:
@@ -101,10 +108,12 @@ class Traces:
 
 
 def test_revision_aware_service_uses_rule_set_revision():
+    rule_nodes = RuleNodes()
     service = RevisionAwareEvaluationService(
-        Scenarios(), RuleSets(), Memberships(), Revisions(), RuleNodes(),
+        Scenarios(), RuleSets(), Memberships(), Revisions(), rule_nodes,
         Products(), HS(), Countries(), Markets(), EvidenceRepo(), Evaluations(), Traces(),
     )
     result = service.evaluate("s1")
     assert result[0].result.value == "APPLICABLE"
     assert result[0].rule_set_version == "2026.09.23.1"
+    assert rule_nodes.requested_revisions == ["r1:1"]

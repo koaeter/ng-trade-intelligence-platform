@@ -829,7 +829,10 @@ def evaluate_export_scenario(scenario_id: str, session: Session = Depends(get_se
     try:
         evaluations = service.evaluate(scenario_id)
     except ValueError as exc:
-        status_code = 409 if str(exc) == "No active rule set is configured" else 404
+        status_code = 409 if str(exc) in {
+            "No active rule set is configured",
+            "Active rule set contains no requirement memberships",
+        } else 404
         raise HTTPException(status_code=status_code, detail=str(exc)) from exc
     session.commit()
     return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]

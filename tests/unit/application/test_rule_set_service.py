@@ -26,6 +26,12 @@ class Repo:
             current.id, current.version, status, current.created_at
         )
 
+    def activate(self, version_id):
+        for current_id, current in list(self.items.items()):
+            if current.status == RuleSetStatus.ACTIVE and current_id != version_id:
+                self.set_status(current_id, RuleSetStatus.RETIRED)
+        self.set_status(version_id, RuleSetStatus.ACTIVE)
+
 
 class Validator:
     def __init__(self):

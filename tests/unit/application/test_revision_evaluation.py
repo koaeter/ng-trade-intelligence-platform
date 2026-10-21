@@ -169,3 +169,18 @@ def test_inactive_revision_skips_evidence_and_rule_reads():
     assert result[0].evidence == ()
     assert evaluations.value == result[0]
     assert traces.value.final_result.value == "NOT_APPLICABLE"
+
+
+
+def test_revision_aware_service_rejects_empty_active_rule_set():
+    class EmptyMemberships:
+        def list_for_rule_set(self, key):
+            return []
+
+    service = RevisionAwareEvaluationService(
+        Scenarios(), RuleSets(), EmptyMemberships(), Revisions(), RuleNodes(),
+        Products(), HS(), Countries(), Markets(), EvidenceRepo(), Evaluations(), Traces(),
+    )
+
+    with pytest.raises(ValueError, match="Active rule set contains no requirement memberships"):
+        service.evaluate("s1")

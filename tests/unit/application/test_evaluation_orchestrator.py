@@ -37,6 +37,7 @@ class RuleNodes:
 class Evaluations:
     def __init__(self):
         self.items = []
+
     def add(self, value):
         self.items.append(value)
 
@@ -45,12 +46,14 @@ class RuleSets:
     def get_active(self):
         class Version:
             version = "2026.09.23.1"
+
         return Version()
 
 
 class Traces:
     def __init__(self):
         self.items = []
+
     def add(self, value, version):
         self.items.append((value, version))
 
@@ -67,3 +70,34 @@ def test_orchestrator_persists_result_and_trace():
     assert evaluations.items == result
     assert traces.items[0][1] == "initial"
     assert traces.items[0][0].final_result.value == "APPLICABLE"
+
+
+def test_definitively_inactive_requirement_skips_evidence_and_rule_reads():
+    class InactiveRequirements:
+        def list_all(self):
+            return [Requirement(
+                "r-old", "Expired requirement",
+                date(2020, 1, 1), effective_to=date(2025, 12, 31),
+                evidence_ids=("e1",), scope_is_general=True,
+            )]
+
+    class ForbiddenEvidenceReads:
+        def get(self, key):
+            raise AssertionError("Evidence must not be loaded for inactive requirements")
+
+    class ForbiddenRuleReads:
+        def list_for_requirement(self, key):
+            raise AssertionError("Rule nodes must not be loaded for inactive requirements")
+
+    evaluations = Evaluations()
+    traces = Traces()
+    result = ScenarioEvaluationOrchestrator(
+        Scenarios(), InactiveRequirements(), evaluations, ForbiddenEvidenceReads(),
+        ForbiddenRuleReads(), traces, RuleSets(),
+    ).evaluate("s1")
+
+    assert len(result) == 1
+    assert result[0].result.value == "NOT_APPLICABLE"
+    assert result[0].evidence == ()
+    assert evaluations.items == result
+    assert traces.items[0][0].final_result.value == "NOT_APPLICABLE"

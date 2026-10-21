@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from packages.application.scenarios.revision_evaluation import RevisionAwareEvaluationService
 from packages.domain.catalog.models import Country, HSCode, Market, Product
 from packages.domain.evidence.models import Evidence
@@ -117,3 +119,18 @@ def test_revision_aware_service_uses_rule_set_revision():
     assert result[0].result.value == "APPLICABLE"
     assert result[0].rule_set_version == "2026.09.23.1"
     assert rule_nodes.requested_revisions == ["r1:1"]
+
+
+
+def test_revision_aware_service_rejects_mismatched_membership():
+    class MismatchedMemberships:
+        def list_for_rule_set(self, key):
+            return [RuleSetRequirementMembership("rs1", "r2", "r1:1")]
+
+    service = RevisionAwareEvaluationService(
+        Scenarios(), RuleSets(), MismatchedMemberships(), Revisions(), RuleNodes(),
+        Products(), HS(), Countries(), Markets(), EvidenceRepo(), Evaluations(), Traces(),
+    )
+
+    with pytest.raises(ValueError, match="membership and requirement revision disagree"):
+        service.evaluate("s1")

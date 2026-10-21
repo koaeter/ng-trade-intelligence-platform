@@ -10,6 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from packages.application.security.authorization import (
     AuthenticatedPrincipal,
     AuthorizationError,
+    require_permission,
 )
 from infrastructure.security.keycloak import (
     KeycloakConfigurationError,
@@ -37,3 +38,19 @@ def get_authenticated_principal(
             detail="Invalid or unconfigured bearer authentication",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
+
+
+def require_keycloak_permission(permission: str):
+    """Build a FastAPI dependency enforcing one exact application permission."""
+    def dependency(
+        principal: AuthenticatedPrincipal = Depends(get_authenticated_principal),
+    ) -> AuthenticatedPrincipal:
+        try:
+            return require_permission(principal, permission)
+        except AuthorizationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permission",
+            ) from exc
+
+    return dependency

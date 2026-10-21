@@ -30,6 +30,8 @@ class RuleSetVersionService:
     def _record_success(self, action: str, version_id: str) -> None:
         if self.audit_repository is None:
             return
+        if not self.actor_subject or not self.actor_subject.strip():
+            raise ValueError("Actor subject is required when lifecycle auditing is enabled")
         # Both repositories must share a session/transaction. If recording fails,
         # the caller must roll back the state change rather than commit without audit.
         self.audit_repository.record(

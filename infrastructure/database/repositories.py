@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
@@ -104,8 +104,107 @@ class SqlAlchemyRequirementRepository(RequirementRepository):
         row = self._session.get(RequirementModel, requirement_id)
         return None if row is None else self._map(row)
     def list_all(self) -> list[Requirement]:
-        return [self._map(row) for row in self._session.scalars(select(RequirementModel).order_by(RequirementModel.id)).all()]
+        rows = self._session.scalars(
+            select(RequirementModel).order_by(RequirementModel.id)
+        ).all()
+        if not rows:
+            return []
 
+        requirement_ids = [row.id for row in rows]
+        product_links = self._session.scalars(
+            select(RequirementProductModel).where(
+                RequirementProductModel.requirement_id.in_(requirement_ids)
+            )
+        ).all()
+        hs_links = self._session.scalars(
+            select(RequirementHSCodeModel).where(
+                RequirementHSCodeModel.requirement_id.in_(requirement_ids)
+            )
+        ).all()
+        country_links = self._session.scalars(
+            select(RequirementOriginCountryModel).where(
+                RequirementOriginCountryModel.requirement_id.in_(requirement_ids)
+            )
+        ).all()
+        market_links = self._session.scalars(
+            select(RequirementDestinationMarketModel).where(
+                RequirementDestinationMarketModel.requirement_id.in_(requirement_ids)
+            )
+        ).all()
+        evidence_links = self._session.scalars(
+            select(RequirementEvidenceModel).where(
+                RequirementEvidenceModel.requirement_id.in_(requirement_ids)
+            )
+        ).all()
+
+        product_ids = {link.product_id for link in product_links}
+        products = {
+            row.id: Product(row.id, row.name)
+            for row in self._session.scalars(
+                select(ProductModel).where(ProductModel.id.in_(product_ids))
+            ).all()
+        } if product_ids else {}
+        hs_keys = {(link.hs_version_id, link.hs_code) for link in hs_links}
+        hs_rows = self._session.scalars(
+            select(HSCodeModel).where(
+                tuple_(HSCodeModel.version_id, HSCodeModel.code).in_(hs_keys)
+            )
+        ).all() if hs_keys else []
+        hs_codes = {
+            (row.version_id, row.code): HSCode(row.version_id, row.code, row.description)
+            for row in hs_rows
+        }
+        country_codes = {link.country_code for link in country_links}
+        countries = {
+            row.code: Country(row.code, row.name)
+            for row in self._session.scalars(
+                select(CountryModel).where(CountryModel.code.in_(country_codes))
+            ).all()
+        } if country_codes else {}
+        market_codes = {link.market_code for link in market_links}
+        markets = {
+            row.code: Market(row.code, row.name, row.country_code)
+            for row in self._session.scalars(
+                select(MarketModel).where(MarketModel.code.in_(market_codes))
+            ).all()
+        } if market_codes else {}
+
+        products_by_requirement = {key: set() for key in requirement_ids}
+        hs_by_requirement = {key: set() for key in requirement_ids}
+        countries_by_requirement = {key: set() for key in requirement_ids}
+        markets_by_requirement = {key: set() for key in requirement_ids}
+        evidence_by_requirement = {key: [] for key in requirement_ids}
+        for link in product_links:
+            if link.product_id in products:
+                products_by_requirement[link.requirement_id].add(products[link.product_id])
+        for link in hs_links:
+            value = hs_codes.get((link.hs_version_id, link.hs_code))
+            if value is not None:
+                hs_by_requirement[link.requirement_id].add(value)
+        for link in country_links:
+            if link.country_code in countries:
+                countries_by_requirement[link.requirement_id].add(countries[link.country_code])
+        for link in market_links:
+            if link.market_code in markets:
+                markets_by_requirement[link.requirement_id].add(markets[link.market_code])
+        for link in evidence_links:
+            evidence_by_requirement[link.requirement_id].append(link.evidence_id)
+
+        return [
+            Requirement(
+                row.id,
+                row.name,
+                row.effective_from,
+                row.effective_to,
+                frozenset(products_by_requirement[row.id]),
+                frozenset(hs_by_requirement[row.id]),
+                frozenset(countries_by_requirement[row.id]),
+                frozenset(markets_by_requirement[row.id]),
+                tuple(sorted(evidence_by_requirement[row.id])),
+                row.scope_is_general,
+            )
+            for row in rows
+        ]
 
 class SqlAlchemyEvidenceRepository(EvidenceRepository):
     def __init__(self, session: Session) -> None: self._session = session

@@ -20,7 +20,7 @@ Recommended separation of duties: authoring, validation, and activation should b
 
 The repository currently has no established user identity, role, or token-validation system. Implementing a homemade token scheme or exposing endpoints with a placeholder dependency would create a false sense of security. Therefore, this pass defines the contract but deliberately does not expose administrative HTTP write endpoints.
 
-Before exposing them, choose and configure an identity provider/protocol (prefer an established OIDC/OAuth2 provider), validate issuer, audience, signature, expiry, and relevant scopes/roles, and map the authenticated identity to the permissions above. Fail closed if identity or permissions cannot be established. Do not use a shared static admin secret as the long-term identity and audit model.
+An application authorization policy now represents the validated principal as a subject plus explicit permissions and fails closed when the principal is absent or lacks the exact permission. This is authorization only; it does not authenticate credentials. Before exposing endpoints, choose and configure an identity provider/protocol (prefer an established OIDC/OAuth2 provider), validate issuer, audience, signature, expiry, and relevant scopes/roles, and construct the principal only after those checks pass. Do not use a shared static admin secret as the long-term identity and audit model.
 
 ## Lifecycle hardening implemented
 

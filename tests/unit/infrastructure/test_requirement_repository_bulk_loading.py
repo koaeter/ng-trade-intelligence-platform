@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import date, datetime, UTC
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session

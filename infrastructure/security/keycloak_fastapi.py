@@ -21,7 +21,7 @@ _bearer = HTTPBearer(auto_error=False)
 
 
 def get_authenticated_principal(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),  # noqa: B008
 ) -> AuthenticatedPrincipal:
     """Authenticate a bearer token or return HTTP 401; never trust raw claims."""
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -43,7 +43,7 @@ def get_authenticated_principal(
 def require_keycloak_permission(permission: str):
     """Build a FastAPI dependency enforcing one exact application permission."""
     def dependency(
-        principal: AuthenticatedPrincipal = Depends(get_authenticated_principal),
+        principal: AuthenticatedPrincipal = Depends(get_authenticated_principal),  # noqa: B008
     ) -> AuthenticatedPrincipal:
         try:
             return require_permission(principal, permission)

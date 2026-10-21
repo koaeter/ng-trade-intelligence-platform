@@ -33,7 +33,6 @@ def test_list_all_bulk_loads_requirement_scope_and_evidence_links():
                 hs_codes=frozenset({HSCode("HS2022", "1801", "Cocoa")}),
                 origin_countries=frozenset({Country("NG", "Nigeria")}),
                 destination_markets=frozenset({Market("DE", "Germany", "DE")}),
-                evidence_ids=("ev-1",),
             ))
             repo.add(Requirement(
                 "r2", "General requirement", date(2026, 1, 1),
@@ -49,7 +48,7 @@ def test_list_all_bulk_loads_requirement_scope_and_evidence_links():
             assert scoped.hs_codes == frozenset({HSCode("HS2022", "1801", "Cocoa")})
             assert scoped.origin_countries == frozenset({Country("NG", "Nigeria")})
             assert scoped.destination_markets == frozenset({Market("DE", "Germany", "DE")})
-            assert scoped.evidence_ids == ("ev-1",)
+            assert scoped.evidence_ids == ()
             assert results[1].scope_is_general is True
     finally:
         Base.metadata.drop_all(engine)

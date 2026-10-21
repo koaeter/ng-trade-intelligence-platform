@@ -16,7 +16,6 @@ from infrastructure.database.repositories import (
     SqlAlchemyMarketRepository,
     SqlAlchemyProductRepository,
     SqlAlchemyProvisionRepository,
-    SqlAlchemyRequirementRepository,
     SqlAlchemySourceRepository,
     SqlAlchemyAcquisitionEventRepository,
     SqlAlchemyExtractionComparisonRepository,

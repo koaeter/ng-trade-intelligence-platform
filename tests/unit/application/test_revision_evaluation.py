@@ -134,3 +134,38 @@ def test_revision_aware_service_rejects_mismatched_membership():
 
     with pytest.raises(ValueError, match="membership and requirement revision disagree"):
         service.evaluate("s1")
+
+
+
+def test_inactive_revision_skips_evidence_and_rule_reads():
+    class ExpiredRevisions:
+        def get(self, key):
+            return RequirementRevision(
+                "r1:1", "r1", "1", "Expired", date(2020, 1, 1), date(2025, 12, 31),
+                ("p1",), (("HS2022", "1801"),), ("NG",), ("DE",), ("e1",), False,
+            )
+
+    class ForbiddenEvidence:
+        def get(self, key):
+            raise AssertionError("Inactive requirements must not load evidence")
+
+    class ForbiddenRuleNodes:
+        def list_for_revision(self, key):
+            raise AssertionError("Inactive requirements must not load rule nodes")
+
+        def list_for_requirement(self, key):
+            raise AssertionError("Revision-aware evaluation must not load by requirement ID")
+
+    evaluations = Evaluations()
+    traces = Traces()
+    service = RevisionAwareEvaluationService(
+        Scenarios(), RuleSets(), Memberships(), ExpiredRevisions(), ForbiddenRuleNodes(),
+        Products(), HS(), Countries(), Markets(), ForbiddenEvidence(), evaluations, traces,
+    )
+
+    result = service.evaluate("s1")
+
+    assert result[0].result.value == "NOT_APPLICABLE"
+    assert result[0].evidence == ()
+    assert evaluations.value == result[0]
+    assert traces.value.final_result.value == "NOT_APPLICABLE"

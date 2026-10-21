@@ -338,6 +338,21 @@ class ApplicabilityEvaluationTraceModel(Base):
     final_result: Mapped[str] = mapped_column(String(32), nullable=False)
 
  
+class RuleSetAuditEventModel(Base):
+    """Append-only record of an administrative rule-set lifecycle operation."""
+
+    __tablename__ = "rule_set_audit_events"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    actor_subject: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    target_rule_set_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("rule_set_versions.id"), nullable=False, index=True
+    )
+    outcome: Mapped[str] = mapped_column(String(16), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    detail: Mapped[str | None] = mapped_column(Text)
+
+
 class RuleSetVersionModel(Base):
     __tablename__ = "rule_set_versions"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

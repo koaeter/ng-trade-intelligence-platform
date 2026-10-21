@@ -1089,9 +1089,18 @@ class SqlAlchemyRuleSetVersionRepository:
     def activate(self, version_id: str) -> None:
         from packages.domain.requirement.rule_sets import RuleSetStatus
 
-        target = self._session.get(RuleSetVersionModel, version_id)
+        target = self._session.scalars(
+            select(RuleSetVersionModel)
+            .where(RuleSetVersionModel.id == version_id)
+            .with_for_update()
+        ).one_or_none()
         if target is None:
             raise ValueError("Rule-set version does not exist")
+        if target.status not in {
+            RuleSetStatus.PUBLISHED.value,
+            RuleSetStatus.ACTIVE.value,
+        }:
+            raise ValueError("Only published rule sets can be activated")
 
         active_rows = self._session.scalars(
             select(RuleSetVersionModel)

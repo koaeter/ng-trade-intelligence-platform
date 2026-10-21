@@ -12,7 +12,7 @@
 
 The repository deliberately offers no update/delete methods for audit events, but application-level API shape alone is not a tamper-proof audit guarantee. Database privileges and operational controls must prevent ordinary application principals from updating or deleting audit rows; a separate privileged migration/maintenance role may still be required. Consider external log shipping or immutable storage for higher assurance.
 
-The audit repository is a persistence building block; lifecycle operations are not yet automatically wired to it. The next pass should compose rule-set operations and audit writes through one unit of work so successful transitions cannot commit without their corresponding audit event. Failed-attempt logging needs a separate durable transaction after the failed operation rolls back, so a rejected validation does not erase its own audit record.
+The rule-set application service now optionally records successful validate, publish, and activate events when an audit repository and actor subject are supplied. Both repositories must share one session and transaction; if audit insertion fails, the caller must roll back rather than commit the state change. Missing actor identity is rejected before mutation. Failed-attempt logging is still separate work: it needs a durable transaction after the failed operation rolls back, so a rejected validation does not erase its own audit record.
 
 ## Security rollout gate
 

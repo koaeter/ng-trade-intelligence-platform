@@ -133,3 +133,35 @@ def test_failed_lifecycle_attempt_is_written_in_independent_committed_transactio
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+def test_failed_draft_creation_can_be_audited_without_persisted_target():
+    from sqlalchemy.orm import sessionmaker
+
+    from infrastructure.database.models import RuleSetAuditEventModel
+    from infrastructure.database.rule_set_audit_writer import (
+        record_failed_rule_set_operation,
+    )
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    try:
+        event_id = record_failed_rule_set_operation(
+            factory,
+            actor_subject="keycloak-subject-10",
+            action="draft.create",
+            target_rule_set_id=None,
+            detail="Draft creation rejected before persistence; requested reference=draft-42",
+        )
+
+        with factory() as session:
+            event = session.get(RuleSetAuditEventModel, event_id)
+            assert event is not None
+            assert event.action == "draft.create"
+            assert event.outcome == "FAILED"
+            assert event.target_rule_set_id is None
+            assert "draft-42" in event.detail
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()

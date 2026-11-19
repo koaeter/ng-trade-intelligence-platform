@@ -24,4 +24,4 @@ This test requires the PostgreSQL service configured by CI and is marked as an i
 
 ## Verification result
 
-The PostgreSQL integration concurrency test passed in CI. The full suite reported **257 passed** on the verified baseline before the subsequent audit-constraint and Keycloak-token hardening changes; those changes have also passed the staged CI gate.
+The PostgreSQL integration concurrency test passed in CI. The full suite reported **257 passed** on the verified baseline, including the subsequent audit-constraint and Keycloak-token hardening changes.

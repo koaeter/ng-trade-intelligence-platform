@@ -33,7 +33,7 @@ def test_loader_rejects_multiple_roots():
         node("b", None, 1, RequirementRuleNodeType.GROUP, group_operator=ConditionGroupOperator.OR),
     ]
     with pytest.raises(ValueError, match="exactly one root"):
-        RequirementRuleTreeLoader().load("req-1", nodes)
+        RequirementRuleTreeLoader().load("req-1", "req-1:r1", nodes)
 
 
 def test_loader_rejects_invalid_not_group():

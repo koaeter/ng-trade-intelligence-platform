@@ -22,7 +22,7 @@ def upgrade() -> None:
             "target_rule_set_id",
             sa.String(length=64),
             sa.ForeignKey("rule_set_versions.id"),
-            nullable=False,
+            nullable=True,
         ),
         sa.Column("outcome", sa.String(length=16), nullable=False),
         sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=False),

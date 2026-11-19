@@ -29,3 +29,8 @@ The rule-set lifecycle service now declares repository, validator, and audit-rep
 ## Security release constraint
 
 No administrative write endpoint may be exposed until Keycloak issuer/audience/JWKS configuration, signature validation, permission enforcement, and the lifecycle authorization path are verified. CI progression alone does not satisfy this release gate.
+
+
+## Verification result
+
+The staged CI gate completed successfully on 19 November 2026: security/lifecycle Ruff checks passed, strict mypy checks passed for the scoped boundary, and the full pytest suite reported **257 passed**. The repository-wide Ruff and mypy backlogs remain outstanding and are not represented as clean.

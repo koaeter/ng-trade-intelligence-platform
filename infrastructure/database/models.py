@@ -345,8 +345,8 @@ class RuleSetAuditEventModel(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     actor_subject: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    target_rule_set_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("rule_set_versions.id"), nullable=False, index=True
+    target_rule_set_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("rule_set_versions.id"), nullable=True, index=True
     )
     outcome: Mapped[str] = mapped_column(String(16), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

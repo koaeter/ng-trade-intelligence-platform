@@ -4,6 +4,8 @@ Import this dependency only when registering an administrative route. This modul
 does not register routes itself; the current API deliberately exposes no admin
 write endpoints.
 """
+from collections.abc import Callable
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -40,7 +42,9 @@ def get_authenticated_principal(
         ) from exc
 
 
-def require_keycloak_permission(permission: str):
+def require_keycloak_permission(
+    permission: str,
+) -> Callable[..., AuthenticatedPrincipal]:
     """Build a FastAPI dependency enforcing one exact application permission."""
     def dependency(
         principal: AuthenticatedPrincipal = Depends(get_authenticated_principal),  # noqa: B008

@@ -21,7 +21,10 @@ class Scenarios:
 
 class Requirements:
     def list_all(self):
-        return [Requirement("r1", "General requirement", date(2026, 1, 1), scope_is_general=True)]
+        return [Requirement(
+            "r1", "General requirement", date(2026, 1, 1),
+            evidence_ids=("e1",), scope_is_general=True,
+        )]
 
 
 class EvidenceRepo:

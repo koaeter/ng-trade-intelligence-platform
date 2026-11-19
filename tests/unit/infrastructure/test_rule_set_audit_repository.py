@@ -165,3 +165,35 @@ def test_failed_draft_creation_can_be_audited_without_persisted_target():
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ("action", "outcome"),
+    [
+        ("unknown", "SUCCEEDED"),
+        ("activate", "UNKNOWN"),
+    ],
+)
+def test_database_rejects_invalid_audit_action_or_outcome(action, outcome):
+    from sqlalchemy.exc import IntegrityError
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as session:
+            session.add(
+                RuleSetAuditEventModel(
+                    id="invalid-event",
+                    actor_subject="admin-1",
+                    action=action,
+                    target_rule_set_id=None,
+                    outcome=outcome,
+                    occurred_at=datetime.now(UTC),
+                )
+            )
+            with pytest.raises(IntegrityError):
+                session.flush()
+            session.rollback()
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()

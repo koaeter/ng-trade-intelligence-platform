@@ -1168,6 +1168,9 @@ class SqlAlchemyRuleSetVersionRepository:
             if active.id != target.id:
                 active.status = RuleSetStatus.RETIRED.value
 
+        # Retire and flush first so SQLite and other immediate unique-index
+        # implementations never observe two ACTIVE rows in the same flush batch.
+        self._session.flush()
         target.status = RuleSetStatus.ACTIVE.value
         # Flush within the caller's transaction; commit/rollback belongs to caller.
         # The partial unique index is the final guard against concurrent activations.

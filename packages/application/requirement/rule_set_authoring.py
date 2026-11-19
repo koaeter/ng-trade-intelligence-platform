@@ -2,8 +2,21 @@ from datetime import UTC, datetime
 from typing import Protocol
 from uuid import uuid4
 
+from packages.domain.requirement.revisions import RequirementRevision
 from packages.domain.requirement.rule_set_membership import RuleSetRequirementMembership
 from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
+
+
+class RuleSetRepository(Protocol):
+    def add(self, version: RuleSetVersion) -> None: ...
+
+
+class RuleSetMembershipRepository(Protocol):
+    def add(self, membership: RuleSetRequirementMembership) -> None: ...
+
+
+class RequirementRevisionRepository(Protocol):
+    def get(self, revision_id: str) -> RequirementRevision | None: ...
 
 
 class RuleSetAuditRepository(Protocol):
@@ -20,9 +33,9 @@ class RuleSetAuditRepository(Protocol):
 class RuleSetAuthoringService:
     def __init__(
         self,
-        rule_sets,
-        memberships,
-        revisions,
+        rule_sets: RuleSetRepository,
+        memberships: RuleSetMembershipRepository,
+        revisions: RequirementRevisionRepository,
         *,
         audit_repository: RuleSetAuditRepository | None = None,
         actor_subject: str | None = None,

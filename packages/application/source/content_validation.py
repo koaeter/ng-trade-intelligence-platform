@@ -81,6 +81,9 @@ class ContentValidationService:
             return DetectedArtifactFormat.UNKNOWN
         if "<html" in text[:4096].lower() or "<!doctype html" in text[:4096].lower():
             return DetectedArtifactFormat.TEXT
-        if data.strip():
+        if data.strip() and all(
+            character.isprintable() or character in "\\t\\n\\r"
+            for character in text
+        ):
             return DetectedArtifactFormat.TEXT
         return DetectedArtifactFormat.UNKNOWN

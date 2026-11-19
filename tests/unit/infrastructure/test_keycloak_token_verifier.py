@@ -103,3 +103,61 @@ def test_keycloak_verifier_checks_real_signature_issuer_audience_and_expiry():
         instance.verify(token(exp=now - timedelta(seconds=1)))
     with pytest.raises(AuthorizationError, match="Only Keycloak access tokens"):
         instance.verify(token(typ="ID"))
+
+
+def test_keycloak_verifier_fetches_jwks_and_verifies_signature_over_http():
+    import json
+    from datetime import UTC, datetime, timedelta
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from threading import Thread
+
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(private_key.public_key()))
+    public_jwk.update({"kid": "local-test-key", "use": "sig", "alg": "RS256"})
+    jwks_payload = json.dumps({"keys": [public_jwk]}).encode()
+
+    class JWKSHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(jwks_payload)
+
+        def log_message(self, format, *args):
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), JWKSHandler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        issuer = "https://identity.example/realms/trade"
+        verifier = KeycloakTokenVerifier(
+            issuer,
+            "trade-api",
+            jwks_url=f"http://127.0.0.1:{server.server_port}/jwks",
+        )
+        now = datetime.now(UTC)
+        token = jwt.encode(
+            {
+                "sub": "jwks-user",
+                "typ": "Bearer",
+                "iss": issuer,
+                "aud": "trade-api",
+                "iat": now,
+                "exp": now + timedelta(minutes=5),
+                "realm_access": {"roles": ["rule-set-reader"]},
+            },
+            private_key,
+            algorithm="RS256",
+            headers={"kid": "local-test-key"},
+        )
+
+        principal = verifier.verify(token)
+        assert principal.subject == "jwks-user"
+        assert principal.permissions == frozenset({"rule_set:read"})
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()

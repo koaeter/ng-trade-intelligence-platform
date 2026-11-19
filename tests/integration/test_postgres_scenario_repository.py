@@ -31,8 +31,10 @@ def test_postgres_scenario_evaluation_round_trip() -> None:
             session.add(HSCodeModel(version_id="HS2022", code="1801", description="Cocoa"))
             session.add_all([
                 CountryModel(code="NG", name="Nigeria"),
-                MarketModel(code="DE", name="Germany", country_code="DE"),
+                CountryModel(code="DE", name="Germany"),
             ])
+            session.flush()
+            session.add(MarketModel(code="DE", name="Germany", country_code="DE"))
             session.flush()
             scenario_repo = SqlAlchemyExportScenarioRepository(session)
             requirement_repo = SqlAlchemyRequirementRepository(session)

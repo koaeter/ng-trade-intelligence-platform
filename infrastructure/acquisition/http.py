@@ -1,21 +1,16 @@
 from http.client import HTTPResponse
 from ipaddress import ip_address
 from urllib.parse import urlparse
-from urllib.request import Request, build_opener
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from packages.application.source.source_acquisition import (
     AcquiredSourceResponse, SourceAcquisitionPolicy,
 )
 
 
-class _NoRedirectHandler:
-    def http_error_302(self, req, fp, code, msg, headers):
+class _NoRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("Source acquisition does not follow redirects automatically")
-
-    http_error_301 = http_error_302
-    http_error_303 = http_error_302
-    http_error_307 = http_error_302
-    http_error_308 = http_error_302
 
 
 class HTTPSourceFetcher:
@@ -23,7 +18,7 @@ class HTTPSourceFetcher:
 
     def __init__(self, policy: SourceAcquisitionPolicy) -> None:
         self.policy = policy
-        self.opener = build_opener(_NoRedirectHandler)
+        self.opener = build_opener(_NoRedirectHandler())
 
     def fetch(self, url: str) -> AcquiredSourceResponse:
         parsed = urlparse(url)

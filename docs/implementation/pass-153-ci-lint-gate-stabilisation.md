@@ -36,4 +36,4 @@ No administrative write endpoint may be exposed until Keycloak issuer/audience/J
 The staged CI gate completed successfully on 19 November 2026: security/lifecycle Ruff checks passed, strict mypy checks passed for the scoped boundary, and the full pytest suite reported **257 passed**. The repository-wide Ruff and mypy backlogs remain outstanding and are not represented as clean.
 
 
-The latest verified run, after successful draft-creation audit integration and Keycloak access-token/JWKS hardening, also passed the scoped Ruff and mypy checks and reported **259 passed**.
+The latest verified run, after successful draft-creation audit integration and Keycloak access-token/JWKS hardening, also passed the scoped Ruff and mypy checks and reported **260 passed**.

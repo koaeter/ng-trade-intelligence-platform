@@ -29,3 +29,8 @@ Continue with append-only lifecycle audit events and tests that bind actor, oper
 ## Access-token versus ID-token distinction
 
 The verifier now requires Keycloak's access-token claim `typ=Bearer`. A signed ID token with otherwise matching issuer and audience is rejected. This prevents an identity token from being substituted for an API bearer access token at the administrative authorization boundary.
+
+
+## Signing-key rotation
+
+The verifier relies on PyJWT's bounded JWKS-document cache and does not enable indefinite per-key caching. This allows refreshed Keycloak JWKS documents to be observed after the cache lifetime, supporting signing-key rotation without requiring an application restart.

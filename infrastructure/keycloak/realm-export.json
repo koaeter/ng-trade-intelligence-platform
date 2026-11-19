@@ -1,0 +1,97 @@
+{
+  "realm": "trade-intelligence",
+  "enabled": true,
+  "displayName": "Trade Intelligence (Local Development)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "trade-admin",
+        "description": "Local development administrator; full rule-set permissions"
+      },
+      {
+        "name": "rule-set-reader",
+        "description": "Read rule sets"
+      },
+      {
+        "name": "rule-set-author",
+        "description": "Create rule-set drafts"
+      },
+      {
+        "name": "rule-set-validator",
+        "description": "Validate rule sets"
+      },
+      {
+        "name": "rule-set-publisher",
+        "description": "Publish validated rule sets"
+      },
+      {
+        "name": "rule-set-activator",
+        "description": "Activate published rule sets"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "trade-api",
+      "name": "Trade Intelligence API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false
+    },
+    {
+      "clientId": "trade-api-dev-cli",
+      "name": "Local Development Token Client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles",
+        "trade-api-audience"
+      ]
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "trade-api-audience",
+      "description": "Adds trade-api as the API audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "trade-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "trade-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": []
+}

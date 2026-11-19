@@ -15,8 +15,11 @@ class Candidates:
         return self.candidate if candidate_id == self.candidate.id else None
 
     def set_status(self, candidate_id, status):
+        from dataclasses import replace
+
         assert candidate_id == self.candidate.id
         self.status = status
+        self.candidate = replace(self.candidate, status=status)
 
 
 class Provisions:

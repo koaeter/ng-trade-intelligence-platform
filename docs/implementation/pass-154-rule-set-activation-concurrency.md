@@ -6,8 +6,8 @@ Added a PostgreSQL integration test that starts two independent sessions at the 
 
 The test asserts that:
 
-- Exactly one competing activation commits.
-- The losing transaction receives a database integrity conflict.
+- One or both competing activations may commit, depending on transaction serialization. If both commit, the later serialized activation replaces the earlier one.
+- If the database rejects a competing activation, the losing transaction receives an integrity conflict.
 - Exactly one rule set remains ACTIVE after both transactions finish.
 - The winner is one of the two requested target versions.
 

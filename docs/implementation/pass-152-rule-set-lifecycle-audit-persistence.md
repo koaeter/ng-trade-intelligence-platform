@@ -27,3 +27,8 @@ The audit target reference is nullable so failed `draft.create` attempts can be 
 ## Database-level event validation
 
 The audit table now enforces allowed lifecycle action names and outcome values with database check constraints as well as repository-level validation. This protects the event vocabulary even if a future writer bypasses the application repository.
+
+
+## Successful draft creation audit
+
+Rule-set authoring now accepts the same optional audit repository and authenticated actor context as lifecycle transitions. When audit is configured, the actor is required before any draft write, and the successful `draft.create` event is inserted after the rule-set and its memberships. These writes must share one database transaction so a failed audit insert prevents the draft from being committed without its event.

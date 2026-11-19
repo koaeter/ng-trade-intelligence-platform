@@ -4,7 +4,6 @@ from packages.domain.source.extraction import ExtractionSegment
 from packages.domain.source.provision_candidates import ProvisionCandidate
 
 
-@dataclass(frozen=True)
 class ProvisionCandidateExtractor:
     """Turns bounded extraction segments into reviewable candidates.
 

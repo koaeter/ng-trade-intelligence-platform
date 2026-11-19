@@ -79,3 +79,51 @@ def test_authoring_rejects_two_revisions_for_same_requirement_before_writing():
 
     assert rule_sets.items == []
     assert memberships.items == []
+
+
+class AuditEvents:
+    def __init__(self):
+        self.items = []
+
+    def record(self, **event):
+        self.items.append(event)
+        return "audit-event-1"
+
+
+def test_authoring_records_successful_draft_creation():
+    audit = AuditEvents()
+    result = RuleSetAuthoringService(
+        RuleSets(),
+        Memberships(),
+        Revisions(),
+        audit_repository=audit,
+        actor_subject="keycloak-user-1",
+    ).create_draft("2026.11.19.1", ("req-1:1",))
+
+    assert audit.items == [
+        {
+            "actor_subject": "keycloak-user-1",
+            "action": "draft.create",
+            "target_rule_set_id": result.id,
+            "outcome": "SUCCEEDED",
+        }
+    ]
+
+
+def test_authoring_requires_actor_when_audit_is_enabled():
+    rule_sets = RuleSets()
+    memberships = Memberships()
+    try:
+        RuleSetAuthoringService(
+            rule_sets,
+            memberships,
+            Revisions(),
+            audit_repository=AuditEvents(),
+        ).create_draft("2026.11.19.2", ("req-1:1",))
+    except ValueError as exc:
+        assert "Actor subject is required" in str(exc)
+    else:
+        raise AssertionError("Expected missing audit actor to be rejected")
+
+    assert rule_sets.items == []
+    assert memberships.items == []

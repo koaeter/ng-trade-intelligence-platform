@@ -34,3 +34,8 @@ The verifier now requires Keycloak's access-token claim `typ=Bearer`. A signed I
 ## Signing-key rotation
 
 The verifier relies on PyJWT's bounded JWKS-document cache and does not enable indefinite per-key caching. This allows refreshed Keycloak JWKS documents to be observed after the cache lifetime, supporting signing-key rotation without requiring an application restart.
+
+
+## Live JWKS retrieval test
+
+The token-verification tests now include a local HTTP JWKS endpoint serving an RSA public key. A token signed by the corresponding private key is verified through the real PyJWKClient retrieval path, exercising key selection, JWKS parsing, signature validation, issuer/audience checks, and access-token type enforcement without relying on an external identity service.

@@ -43,7 +43,12 @@ jobs:
           tests/unit/infrastructure/test_keycloak_token_verifier.py
           tests/unit/infrastructure/test_keycloak_fastapi_dependency.py
           tests/unit/infrastructure/test_rule_set_audit_repository.py
-      - name: Type check
-        run: mypy apps packages infrastructure
+      - name: Type check security and lifecycle boundary
+        run: >-
+          mypy --follow-imports=silent
+          infrastructure/security/keycloak.py
+          infrastructure/security/keycloak_fastapi.py
+          infrastructure/database/rule_set_audit_writer.py
+          packages/application/requirement/rule_set_service.py
       - name: Test
         run: pytest

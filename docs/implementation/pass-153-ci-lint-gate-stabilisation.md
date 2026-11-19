@@ -20,6 +20,12 @@ This is a staged quality gate, not a declaration that the repository is lint-cle
 
 Legacy modules touched by this work still require full-file lint remediation. In particular, the database models/repositories and rule-set service should be split into manageable cleanup units rather than hidden behind permanent exclusions.
 
+## Type-checking baseline
+
+After the scoped Ruff gate passed, the repository-wide strict mypy command reported 220 errors across 35 files. Most were pre-existing missing annotations, untyped calls, and database-repository/model typing issues. The current CI type gate is therefore staged on the Keycloak and rule-set lifecycle boundary with imported legacy modules treated as dependencies rather than rechecked. The full mypy backlog remains visible and must be reduced incrementally; it is not considered resolved.
+
+The rule-set lifecycle service now declares repository, validator, and audit-repository protocols instead of accepting untyped dependencies. The Keycloak dependency factory also has an explicit return type.
+
 ## Security release constraint
 
 No administrative write endpoint may be exposed until Keycloak issuer/audience/JWKS configuration, signature validation, permission enforcement, and the lifecycle authorization path are verified. CI progression alone does not satisfy this release gate.

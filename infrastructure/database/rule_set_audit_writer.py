@@ -11,7 +11,7 @@ def record_failed_rule_set_operation(
     *,
     actor_subject: str,
     action: str,
-    target_rule_set_id: str,
+    target_rule_set_id: str | None,
     detail: str,
 ) -> str:
     """Persist a failure event in its own transaction.

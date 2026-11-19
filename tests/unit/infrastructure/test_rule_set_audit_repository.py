@@ -40,7 +40,7 @@ def test_rule_set_audit_event_records_actor_action_target_and_time():
             assert event.target_rule_set_id == "rs-1"
             assert event.outcome == "SUCCEEDED"
             assert event.detail == "Activated after validation"
-            assert event.occurred_at == occurred_at
+            assert event.occurred_at == occurred_at.replace(tzinfo=None)
             assert len(SqlAlchemyRuleSetAuditRepository(session).list_for_target("rs-1")) == 1
     finally:
         Base.metadata.drop_all(engine)

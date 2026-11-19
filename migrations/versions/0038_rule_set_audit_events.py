@@ -27,6 +27,14 @@ def upgrade() -> None:
         sa.Column("outcome", sa.String(length=16), nullable=False),
         sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("detail", sa.Text(), nullable=True),
+        sa.CheckConstraint(
+            "action IN ('draft.create', 'validate', 'publish', 'activate', 'retire')",
+            name="ck_rule_set_audit_action",
+        ),
+        sa.CheckConstraint(
+            "outcome IN ('SUCCEEDED', 'FAILED')",
+            name="ck_rule_set_audit_outcome",
+        ),
     )
     op.create_index(
         "ix_rule_set_audit_events_actor_subject",

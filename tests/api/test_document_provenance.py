@@ -283,7 +283,7 @@ def test_get_document_provenance_summary_returns_404(monkeypatch):
 
 def test_get_document_provenance_accepts_limit_and_reports_truncation(monkeypatch):
     class LimitedArtifactRepository(FakeArtifactRepository):
-        def list_for_document_version(self, version_id):
+        def list_for_document_version(self, version_id, limit=None):
             return [
                 FakeArtifact(),
                 type("SecondArtifact", (), {

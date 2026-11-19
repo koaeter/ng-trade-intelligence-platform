@@ -1,15 +1,37 @@
 from datetime import UTC, datetime
+from typing import Protocol
 from uuid import uuid4
 
 from packages.domain.requirement.rule_set_membership import RuleSetRequirementMembership
 from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
 
 
+class RuleSetAuditRepository(Protocol):
+    def record(
+        self,
+        *,
+        actor_subject: str,
+        action: str,
+        target_rule_set_id: str | None,
+        outcome: str,
+    ) -> str: ...
+
+
 class RuleSetAuthoringService:
-    def __init__(self, rule_sets, memberships, revisions) -> None:
+    def __init__(
+        self,
+        rule_sets,
+        memberships,
+        revisions,
+        *,
+        audit_repository: RuleSetAuditRepository | None = None,
+        actor_subject: str | None = None,
+    ) -> None:
         self.rule_sets = rule_sets
         self.memberships = memberships
         self.revisions = revisions
+        self.audit_repository = audit_repository
+        self.actor_subject = actor_subject
 
     def create_draft(self, version: str, revision_ids: tuple[str, ...]) -> RuleSetVersion:
         if not version.strip():
@@ -18,6 +40,10 @@ class RuleSetAuthoringService:
             raise ValueError("A rule set requires at least one requirement revision")
         if len(set(revision_ids)) != len(revision_ids):
             raise ValueError("Duplicate requirement revision IDs are not allowed")
+        if self.audit_repository is not None and (
+            not self.actor_subject or not self.actor_subject.strip()
+        ):
+            raise ValueError("Actor subject is required when lifecycle auditing is enabled")
 
         resolved = []
         for revision_id in revision_ids:
@@ -44,5 +70,13 @@ class RuleSetAuthoringService:
                     revision.requirement_id,
                     revision.id,
                 )
+            )
+        if self.audit_repository is not None:
+            assert self.actor_subject is not None
+            self.audit_repository.record(
+                actor_subject=self.actor_subject,
+                action="draft.create",
+                target_rule_set_id=rule_set.id,
+                outcome="SUCCEEDED",
             )
         return rule_set

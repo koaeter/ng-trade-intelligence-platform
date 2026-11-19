@@ -1,13 +1,38 @@
-from packages.domain.requirement.rule_sets import RuleSetStatus
+from typing import Protocol
+
+from packages.domain.requirement.rule_sets import RuleSetStatus, RuleSetVersion
+
+
+class RuleSetVersionRepository(Protocol):
+    def get(self, version_id: str) -> RuleSetVersion | None: ...
+
+    def set_status(self, version_id: str, status: RuleSetStatus) -> None: ...
+
+    def activate(self, version_id: str) -> None: ...
+
+
+class RuleSetValidator(Protocol):
+    def validate(self, version_id: str) -> None: ...
+
+
+class RuleSetAuditRepository(Protocol):
+    def record(
+        self,
+        *,
+        actor_subject: str,
+        action: str,
+        target_rule_set_id: str,
+        outcome: str,
+    ) -> str: ...
 
 
 class RuleSetVersionService:
     def __init__(
         self,
-        repository,
-        validator=None,
+        repository: RuleSetVersionRepository,
+        validator: RuleSetValidator | None = None,
         *,
-        audit_repository=None,
+        audit_repository: RuleSetAuditRepository | None = None,
         actor_subject: str | None = None,
     ) -> None:
         self.repository = repository
@@ -15,7 +40,7 @@ class RuleSetVersionService:
         self.audit_repository = audit_repository
         self.actor_subject = actor_subject
 
-    def _get(self, version_id: str):
+    def _get(self, version_id: str) -> RuleSetVersion:
         target = self.repository.get(version_id)
         if target is None:
             raise ValueError("Rule-set version does not exist")
@@ -47,6 +72,7 @@ class RuleSetVersionService:
             raise ValueError("Only draft or validated rule sets can be validated")
         self._require_audit_actor()
         self._require_validator()
+        assert self.validator is not None
         self.validator.validate(target.id)
         self.repository.set_status(target.id, RuleSetStatus.VALIDATED)
         self._record_success("validate", target.id)
@@ -65,12 +91,10 @@ class RuleSetVersionService:
             raise ValueError("Only published rule sets can be activated")
         self._require_audit_actor()
         self._require_validator()
+        assert self.validator is not None
         # Revalidate immediately before the rule set becomes active.
         self.validator.validate(target.id)
-        activate = getattr(self.repository, "activate", None)
-        if activate is None:
-            raise ValueError("Atomic rule-set activation is not supported by this repository")
-        activate(target.id)
+        self.repository.activate(target.id)
         self._record_success("activate", target.id)
 
     def _require_validator(self) -> None:

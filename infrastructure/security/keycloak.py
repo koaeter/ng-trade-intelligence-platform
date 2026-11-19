@@ -78,6 +78,9 @@ class KeycloakTokenVerifier:
         except (InvalidTokenError, jwt.PyJWKClientError, ValueError) as exc:
             raise AuthorizationError("Invalid or untrusted access token") from exc
 
+        if claims.get("typ") != "Bearer":
+            raise AuthorizationError("Only Keycloak access tokens are accepted")
+
         subject = claims.get("sub")
         if not isinstance(subject, str) or not subject.strip():
             raise AuthorizationError("Access token has no valid subject")

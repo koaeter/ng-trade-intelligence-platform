@@ -26,7 +26,10 @@ def test_postgres_scenario_evaluation_round_trip() -> None:
             session.add_all([
                 ProductModel(id="product-1", name="Product"),
                 HSVersionModel(id="HS2022", name="HS 2022"),
-                HSCodeModel(version_id="HS2022", code="1801", description="Cocoa"),
+            ])
+            session.flush()
+            session.add(HSCodeModel(version_id="HS2022", code="1801", description="Cocoa"))
+            session.add_all([
                 CountryModel(code="NG", name="Nigeria"),
                 MarketModel(code="DE", name="Germany", country_code="DE"),
             ])

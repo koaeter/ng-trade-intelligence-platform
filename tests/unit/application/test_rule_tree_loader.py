@@ -41,4 +41,4 @@ def test_loader_rejects_invalid_not_group():
         node("root", None, 0, RequirementRuleNodeType.GROUP, group_operator=ConditionGroupOperator.NOT),
     ]
     with pytest.raises(ValueError, match="NOT"):
-        RequirementRuleTreeLoader().load("req-1", nodes)
+        RequirementRuleTreeLoader().load("req-1", "req-1:r1", nodes)

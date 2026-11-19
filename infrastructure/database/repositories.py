@@ -1070,7 +1070,7 @@ class SqlAlchemyRuleSetAuditRepository:
         *,
         actor_subject: str,
         action: str,
-        target_rule_set_id: str,
+        target_rule_set_id: str | None,
         outcome: str,
         detail: str | None = None,
         occurred_at: datetime | None = None,

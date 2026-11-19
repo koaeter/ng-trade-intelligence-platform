@@ -40,6 +40,7 @@ jobs:
           infrastructure/security/keycloak.py
           infrastructure/security/keycloak_fastapi.py
           infrastructure/database/rule_set_audit_writer.py
+          packages/application/requirement/rule_set_authoring.py
           tests/unit/infrastructure/test_keycloak_token_verifier.py
           tests/unit/infrastructure/test_keycloak_fastapi_dependency.py
           tests/unit/infrastructure/test_rule_set_audit_repository.py
@@ -50,5 +51,6 @@ jobs:
           infrastructure/security/keycloak_fastapi.py
           infrastructure/database/rule_set_audit_writer.py
           packages/application/requirement/rule_set_service.py
+          packages/application/requirement/rule_set_authoring.py
       - name: Test
         run: pytest

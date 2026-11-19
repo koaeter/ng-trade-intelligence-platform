@@ -1,5 +1,6 @@
 """Durable writer for failed lifecycle attempts after the business transaction rolls back."""
 from collections.abc import Callable
+
 from sqlalchemy.orm import Session
 
 from infrastructure.database.repositories import SqlAlchemyRuleSetAuditRepository

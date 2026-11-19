@@ -268,7 +268,10 @@ def test_get_document_provenance_summary(monkeypatch):
 
 def test_get_document_provenance_summary_returns_404(monkeypatch):
     monkeypatch.setattr(
-        api,\n        "SqlAlchemyDocumentProvenanceSummaryRepository",\n        FakeProvenanceSummaryRepository,\n    )
+        api,
+        "SqlAlchemyDocumentProvenanceSummaryRepository",
+        FakeProvenanceSummaryRepository,
+    )
     app.dependency_overrides[api.get_session] = lambda: FakeSession()
     try:
         response = TestClient(app).get("/api/v1/documents/missing/provenance/summary")

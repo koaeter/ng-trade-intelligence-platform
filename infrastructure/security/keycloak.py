@@ -59,7 +59,9 @@ class KeycloakTokenVerifier:
             )
         self.role_client_id = role_client_id or self.audience
         self.jwks_url = jwks_url or f"{self.issuer}/protocol/openid-connect/certs"
-        self._jwks = PyJWKClient(self.jwks_url, cache_keys=True)
+        # Use the JWKS client's bounded document cache; do not pin individual keys
+        # indefinitely because Keycloak may rotate signing keys.
+        self._jwks = PyJWKClient(self.jwks_url)
 
     def verify(self, token: str) -> AuthenticatedPrincipal:
         """Return a trusted principal only after signature and claim validation."""

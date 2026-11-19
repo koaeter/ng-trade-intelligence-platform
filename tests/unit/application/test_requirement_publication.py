@@ -38,6 +38,9 @@ class ListRepo:
     def add(self, value):
         self.items.append(value)
 
+    def get(self, key):
+        return next((item for item in self.values if getattr(item, "id", None) == key), None)
+
 
 class ReviewRepo:
     def __init__(self):

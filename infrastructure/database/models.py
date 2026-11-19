@@ -1,5 +1,16 @@
 from datetime import date, datetime
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, JSON, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    JSON,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.database.base import Base
 
@@ -351,6 +362,17 @@ class RuleSetAuditEventModel(Base):
     outcome: Mapped[str] = mapped_column(String(16), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     detail: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(
+            "action IN ('draft.create', 'validate', 'publish', 'activate', 'retire')",
+            name="ck_rule_set_audit_action",
+        ),
+        CheckConstraint(
+            "outcome IN ('SUCCEEDED', 'FAILED')",
+            name="ck_rule_set_audit_outcome",
+        ),
+    )
 
 
 class RuleSetVersionModel(Base):

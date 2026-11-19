@@ -20,3 +20,8 @@ The application-level lock strategy is an optimisation and coordination mechanis
 ## Verification boundary
 
 This test requires the PostgreSQL service configured by CI and is marked as an integration test. A passing test demonstrates the tested concurrent activation scenario; it does not replace production database isolation review or operational monitoring.
+
+
+## Verification result
+
+The PostgreSQL integration concurrency test passed in CI. The full suite reported **257 passed** on the verified baseline before the subsequent audit-constraint and Keycloak-token hardening changes; those changes have also passed the staged CI gate.

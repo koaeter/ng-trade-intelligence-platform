@@ -26,6 +26,7 @@ def test_keycloak_verifier_maps_explicit_realm_roles(monkeypatch):
         "infrastructure.security.keycloak.jwt.decode",
         lambda *args, **kwargs: {
             "sub": "user-123",
+            "typ": "Bearer",
             "realm_access": {"roles": ["rule-set-author", "unrecognized-role"]},
             "resource_access": {},
         },
@@ -80,6 +81,7 @@ def test_keycloak_verifier_checks_real_signature_issuer_audience_and_expiry():
     def token(**overrides):
         claims = {
             "sub": "real-user",
+            "typ": "Bearer",
             "iss": "https://identity.example/realms/trade",
             "aud": "trade-api",
             "iat": now,
@@ -99,3 +101,5 @@ def test_keycloak_verifier_checks_real_signature_issuer_audience_and_expiry():
         instance.verify(token(aud="other-api"))
     with pytest.raises(AuthorizationError, match="Invalid or untrusted"):
         instance.verify(token(exp=now - timedelta(seconds=1)))
+    with pytest.raises(AuthorizationError, match="Only Keycloak access tokens"):
+        instance.verify(token(typ="ID"))

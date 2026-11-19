@@ -5,8 +5,12 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 
 from infrastructure.database.models import (
-    ApplicabilityEvaluationModel, CountryModel, DocumentModel, EvidenceModel, RuleSetAuditEventModel,
-    ExportScenarioModel, ExtractedTextModel, HSCodeModel, MarketModel, ProductModel,
+    ApplicabilityEvaluationModel, ApplicabilityEvaluationTraceModel, CountryModel,
+    DocumentModel, EvidenceModel, ExportScenarioModel, ExtractedTextModel, HSCodeModel,
+    MarketModel, ProductModel, ProvisionCandidateReviewModel, RequirementCandidateModel,
+    RequirementCandidateReviewModel, RequirementConditionCandidateModel,
+    RequirementRevisionModel, RequirementRuleNodeModel, RequirementScopeCandidateModel,
+    RuleSetAuditEventModel, RuleSetRequirementMembershipModel, RuleSetVersionModel,
     ProvisionModel, RequirementDestinationMarketModel, RequirementEvidenceModel,
     RequirementHSCodeModel, RequirementModel, RequirementOriginCountryModel,
     RequirementProductModel, SourceArtifactModel, SourceModel, ExtractionRunModel, ExtractionComparisonModel, ExtractionSegmentModel, ProvisionCandidateModel,

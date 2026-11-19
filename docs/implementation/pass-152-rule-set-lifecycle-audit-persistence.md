@@ -22,3 +22,8 @@ Administrative write routes remain disabled. Keycloak role mapping and dependenc
 ## Failed draft creation coverage
 
 The audit target reference is nullable so failed `draft.create` attempts can be recorded even when no rule-set row was persisted. The attempted draft identifier or validation context belongs in the event detail; the nullable foreign key remains reserved for a real persisted rule-set version. This avoids losing the audit record merely because the operation that failed was responsible for creating the target.
+
+
+## Database-level event validation
+
+The audit table now enforces allowed lifecycle action names and outcome values with database check constraints as well as repository-level validation. This protects the event vocabulary even if a future writer bypasses the application repository.

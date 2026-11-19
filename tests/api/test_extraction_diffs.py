@@ -411,7 +411,7 @@ class FakeDocumentVersionRepository:
     def get(self, version_id: str):
         return FakeDocumentVersion() if version_id == "version-1" else None
 
-    def list_for_document(self, document_id: str):
+    def list_for_document(self, document_id: str, limit: int | None = None):
         return [FakeDocumentVersion()] if document_id == "document-1" else []
 
 

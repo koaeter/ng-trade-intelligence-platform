@@ -24,3 +24,8 @@ Administrative write endpoints remain unexposed. Before route wiring, verify rea
 ## Rule-set lifecycle continuation
 
 Continue with append-only lifecycle audit events and tests that bind actor, operation, target rule-set version, timestamp, and outcome to the same transaction as successful state changes. Failed validation or activation must not produce a successful-transition audit record.
+
+
+## Access-token versus ID-token distinction
+
+The verifier now requires Keycloak's access-token claim `typ=Bearer`. A signed ID token with otherwise matching issuer and audience is rejected. This prevents an identity token from being substituted for an API bearer access token at the administrative authorization boundary.

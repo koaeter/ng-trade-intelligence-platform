@@ -17,3 +17,8 @@ The rule-set application service now optionally records successful validate, pub
 ## Security rollout gate
 
 Administrative write routes remain disabled. Keycloak role mapping and dependencies exist, but real-realm integration, production configuration, CI tests, and database privilege validation are still required before route registration.
+
+
+## Failed draft creation coverage
+
+The audit target reference is nullable so failed `draft.create` attempts can be recorded even when no rule-set row was persisted. The attempted draft identifier or validation context belongs in the event detail; the nullable foreign key remains reserved for a real persisted rule-set version. This avoids losing the audit record merely because the operation that failed was responsible for creating the target.

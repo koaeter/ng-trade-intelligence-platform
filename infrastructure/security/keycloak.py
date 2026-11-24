@@ -87,17 +87,20 @@ class KeycloakTokenVerifier:
         if not isinstance(subject, str) or not subject.strip():
             raise AuthorizationError("Access token has no valid subject")
 
-        realm_access = claims.get("realm_access")
-        roles = realm_access.get("roles", []) if isinstance(realm_access, dict) else []
+        realm_access = claims.get("realm_access", {})
+        if not isinstance(realm_access, dict):
+            raise AuthorizationError("Access token realm-role claims are malformed")
+        roles = realm_access.get("roles", [])
         if not isinstance(roles, list) or any(not isinstance(role, str) for role in roles):
-            raise AuthorizationError("Access token role claims are malformed")
+            raise AuthorizationError("Access token realm-role claims are malformed")
 
         resource_access = claims.get("resource_access", {})
-        client_roles: list[str] = []
-        if isinstance(resource_access, dict):
-            client_access = resource_access.get(self.role_client_id, {})
-            if isinstance(client_access, dict):
-                client_roles = client_access.get("roles", [])
+        if not isinstance(resource_access, dict):
+            raise AuthorizationError("Access token client-role claims are malformed")
+        client_access = resource_access.get(self.role_client_id, {})
+        if not isinstance(client_access, dict):
+            raise AuthorizationError("Access token client-role claims are malformed")
+        client_roles = client_access.get("roles", [])
         if not isinstance(client_roles, list) or any(
             not isinstance(role, str) for role in client_roles
         ):

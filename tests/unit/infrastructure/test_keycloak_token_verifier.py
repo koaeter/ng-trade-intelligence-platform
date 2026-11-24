@@ -161,3 +161,61 @@ def test_keycloak_verifier_fetches_jwks_and_verifies_signature_over_http():
         server.shutdown()
         thread.join(timeout=5)
         server.server_close()
+
+
+@pytest.mark.parametrize(
+    ("claim", "value", "message"),
+    [
+        ("realm_access", ["rule-set-reader"], "realm-role claims are malformed"),
+        ("realm_access", {"roles": "rule-set-reader"}, "realm-role claims are malformed"),
+        ("resource_access", ["trade-api"], "client-role claims are malformed"),
+        (
+            "resource_access",
+            {"trade-api": ["rule-set-reader"]},
+            "client-role claims are malformed",
+        ),
+        (
+            "resource_access",
+            {"trade-api": {"roles": "rule-set-reader"}},
+            "client-role claims are malformed",
+        ),
+    ],
+)
+def test_keycloak_verifier_rejects_malformed_role_claim_containers(
+    monkeypatch, claim, value, message
+):
+    instance = verifier()
+    instance._jwks = Mock()
+    instance._jwks.get_signing_key_from_jwt.return_value.key = "public-key"
+    claims = {
+        "sub": "user-123",
+        "typ": "Bearer",
+        "realm_access": {"roles": ["rule-set-reader"]},
+        "resource_access": {},
+    }
+    claims[claim] = value
+    monkeypatch.setattr(
+        "infrastructure.security.keycloak.jwt.decode",
+        lambda *args, **kwargs: claims,
+    )
+
+    with pytest.raises(AuthorizationError, match=message):
+        instance.verify("signed-token")
+
+
+def test_keycloak_verifier_accepts_absent_optional_role_claims(monkeypatch):
+    instance = verifier()
+    instance._jwks = Mock()
+    instance._jwks.get_signing_key_from_jwt.return_value.key = "public-key"
+    monkeypatch.setattr(
+        "infrastructure.security.keycloak.jwt.decode",
+        lambda *args, **kwargs: {
+            "sub": "user-without-roles",
+            "typ": "Bearer",
+        },
+    )
+
+    principal = instance.verify("signed-token")
+
+    assert principal.subject == "user-without-roles"
+    assert principal.permissions == frozenset()

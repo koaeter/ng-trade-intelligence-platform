@@ -26,6 +26,10 @@ Assign only the application roles that are explicitly mapped in `infrastructure/
 - `rule-set-validator`
 - `rule-set-publisher`
 - `rule-set-activator`
+- `scenario-creator`
+- `scenario-evaluator`
+- `authority-endpoint-verifier`
+- `source-catalog-author`
 
 Unknown roles grant no application permissions. Do not create a broad wildcard mapping.
 
@@ -51,4 +55,4 @@ No client secret is required for local JWT signature verification. Never place s
 7. Verify the application database role cannot update or delete audit events outside the approved retention/administrative process.
 8. Obtain a deployment/security review before enabling any administrative write route.
 
-Until all checks are complete, keep administrative write endpoints unregistered.
+Until all checks are complete, keep the six legacy data-domain mutation routes locked with HTTP 503 and do not register new administrative write routes. The legacy routes remain registered for compatibility, but their fail-closed dependency prevents their handlers from executing. The `trade-admin` role is limited to rule-set lifecycle permissions and does not inherit data-domain permissions.

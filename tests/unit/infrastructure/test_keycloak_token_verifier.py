@@ -276,3 +276,20 @@ def test_trade_admin_does_not_receive_data_domain_permissions():
     assert "document:create" not in permissions
     assert "provision:create" not in permissions
 
+
+
+@pytest.mark.parametrize(
+    ("issuer", "jwks_url"),
+    [
+        ("http://identity.example/realms/trade", None),
+        ("https://identity.example/realms/trade", "http://identity.example/jwks"),
+        ("https://user:password@identity.example/realms/trade", None),
+        ("https://identity.example/realms/trade?unsafe=true", None),
+        ("https:///realms/trade", None),
+    ],
+)
+def test_keycloak_verifier_rejects_insecure_or_malformed_identity_endpoints(
+    issuer, jwks_url
+):
+    with pytest.raises(KeycloakConfigurationError):
+        KeycloakTokenVerifier(issuer, "trade-api", jwks_url=jwks_url)

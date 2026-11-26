@@ -1,8 +1,8 @@
 """Keycloak OIDC access-token verification for administrative API dependencies.
 
-This module validates bearer tokens but intentionally does not expose or register
-administrative endpoints. Route wiring must remain disabled until deployment
-configuration and integration tests are verified.
+This module validates bearer tokens and maps explicitly assigned Keycloak roles
+to application permissions. Administrative route wiring remains subject to the
+separate fail-closed route lock until live identity and authorization checks pass.
 """
 from __future__ import annotations
 

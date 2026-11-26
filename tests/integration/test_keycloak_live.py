@@ -1,12 +1,41 @@
-"""Opt-in integration test against a running local or test Keycloak realm."""
+"""Opt-in integration test against a running local or remote test Keycloak realm."""
 from __future__ import annotations
 
 import os
+from urllib.parse import urlparse
 
 import httpx
 import pytest
 
 from infrastructure.security.keycloak import KeycloakTokenVerifier
+
+
+def _validate_issuer_transport(issuer: str) -> None:
+    """Never transmit test-user credentials to a remote Keycloak over plain HTTP."""
+    parsed = urlparse(issuer)
+    hostname = (parsed.hostname or "").lower()
+    local_hosts = {"localhost", "127.0.0.1", "::1"}
+    if parsed.scheme != "https" and hostname not in local_hosts:
+        raise ValueError(
+            "KEYCLOAK_ISSUER must use HTTPS unless it targets a loopback address"
+        )
+
+
+@pytest.mark.parametrize(
+    ("issuer", "should_raise"),
+    [
+        ("https://identity.example/realms/trade", False),
+        ("http://localhost:8081/realms/trade", False),
+        ("http://127.0.0.1:8081/realms/trade", False),
+        ("http://identity.example/realms/trade", True),
+    ],
+)
+def test_live_keycloak_issuer_requires_https_off_loopback(issuer, should_raise):
+    if should_raise:
+        with pytest.raises(ValueError, match="must use HTTPS"):
+            _validate_issuer_transport(issuer)
+    else:
+        _validate_issuer_transport(issuer)
 
 
 @pytest.mark.integration
@@ -15,8 +44,9 @@ def test_live_keycloak_access_token_is_verified_and_roles_are_mapped() -> None:
     username = os.getenv("KEYCLOAK_TEST_USERNAME", "")
     password = os.getenv("KEYCLOAK_TEST_PASSWORD", "")
     if not issuer or not username or not password:
-        pytest.skip("Set KEYCLOAK_ISSUER and local Keycloak test-user credentials")
+        pytest.skip("Set KEYCLOAK_ISSUER and test-user credentials")
 
+    _validate_issuer_transport(issuer)
     token_url = f"{issuer}/protocol/openid-connect/token"
     response = httpx.post(
         token_url,

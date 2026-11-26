@@ -1,9 +1,11 @@
 """FastAPI dependency for Keycloak-protected administrative route wiring.
 
-Import this dependency only when registering an administrative route. This module
-does not register routes itself; the current API deliberately exposes no admin
-write endpoints.
+Import this dependency when registering a protected administrative route. This
+module does not register routes itself. The six legacy data-domain mutation
+routes remain registered but fail closed with HTTP 503 until live Keycloak
+authentication, per-operation authorization, and audit controls are verified.
 """
+
 from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, status

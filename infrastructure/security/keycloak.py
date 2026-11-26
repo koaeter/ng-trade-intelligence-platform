@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from typing import Any
+from urllib.parse import urlsplit
 
 import jwt
 from jwt import InvalidTokenError, PyJWKClient
@@ -49,6 +50,29 @@ class KeycloakConfigurationError(RuntimeError):
     """Raised when required Keycloak verification settings are missing."""
 
 
+def _validate_identity_endpoint(url: str, setting_name: str) -> None:
+    """Require HTTPS for remote identity endpoints; allow HTTP only on loopback."""
+    parsed = urlsplit(url)
+    hostname = (parsed.hostname or "").lower()
+    local_hosts = {"localhost", "127.0.0.1", "::1"}
+    if (
+        not hostname
+        or parsed.scheme not in {"http", "https"}
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise KeycloakConfigurationError(
+            f"{setting_name} must be an absolute HTTP(S) URL without credentials, "
+            "query parameters, or fragments"
+        )
+    if parsed.scheme != "https" and hostname not in local_hosts:
+        raise KeycloakConfigurationError(
+            f"{setting_name} must use HTTPS unless it targets a loopback address"
+        )
+
+
 class KeycloakTokenVerifier:
     """Verify Keycloak-signed access tokens and map realm roles to permissions."""
 
@@ -68,6 +92,8 @@ class KeycloakTokenVerifier:
             )
         self.role_client_id = role_client_id or self.audience
         self.jwks_url = jwks_url or f"{self.issuer}/protocol/openid-connect/certs"
+        _validate_identity_endpoint(self.issuer, "KEYCLOAK_ISSUER")
+        _validate_identity_endpoint(self.jwks_url, "KEYCLOAK_JWKS_URL")
         # Use the JWKS client's bounded document cache; do not pin individual keys
         # indefinitely because Keycloak may rotate signing keys.
         self._jwks = PyJWKClient(self.jwks_url)

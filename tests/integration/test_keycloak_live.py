@@ -11,10 +11,12 @@ from infrastructure.security.keycloak import KeycloakTokenVerifier
 
 
 def _validate_issuer_transport(issuer: str) -> None:
-    """Never transmit test-user credentials to a remote Keycloak over plain HTTP."""
+    """Never transmit test-user credentials to an insecure or malformed issuer."""
     parsed = urlparse(issuer)
     hostname = (parsed.hostname or "").lower()
     local_hosts = {"localhost", "127.0.0.1", "::1"}
+    if not hostname or parsed.scheme not in {"http", "https"}:
+        raise ValueError("KEYCLOAK_ISSUER must be an absolute HTTP(S) URL")
     if parsed.scheme != "https" and hostname not in local_hosts:
         raise ValueError(
             "KEYCLOAK_ISSUER must use HTTPS unless it targets a loopback address"
@@ -28,11 +30,13 @@ def _validate_issuer_transport(issuer: str) -> None:
         ("http://localhost:8081/realms/trade", False),
         ("http://127.0.0.1:8081/realms/trade", False),
         ("http://identity.example/realms/trade", True),
+        ("ftp://identity.example/realms/trade", True),
+        ("https:///realms/trade", True),
     ],
 )
-def test_live_keycloak_issuer_requires_https_off_loopback(issuer, should_raise):
+def test_live_keycloak_issuer_requires_valid_secure_transport(issuer, should_raise):
     if should_raise:
-        with pytest.raises(ValueError, match="must use HTTPS"):
+        with pytest.raises(ValueError):
             _validate_issuer_transport(issuer)
     else:
         _validate_issuer_transport(issuer)

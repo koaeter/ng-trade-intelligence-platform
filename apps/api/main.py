@@ -65,6 +65,17 @@ from packages.domain.source.models import Document, Provision, Source
 app = FastAPI(title="NG Trade Intelligence Platform API", version="0.1.0")
 
 
+MUTATIONS_DISABLED_DETAIL = (
+    "Mutation endpoints are temporarily disabled pending verified Keycloak "
+    "authentication and authorization."
+)
+
+
+def _deny_mutation_until_keycloak_verified() -> None:
+    """Fail closed until live Keycloak authentication and authorization are verified."""
+    raise HTTPException(status_code=503, detail=MUTATIONS_DISABLED_DETAIL)
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str
@@ -347,8 +358,7 @@ class EvidenceResponse(BaseModel):
 
 def _document_response(document) -> DocumentResponse:
     return DocumentResponse(
-        id=document.id,
-        source_id=document.source_id,
+        id=document.id,        source_id=document.source_id,
         title=document.title,
         document_type=document.document_type,
         publication_date=document.publication_date,
@@ -697,8 +707,7 @@ def get_source_artifact(artifact_id: str, session: Session = Depends(get_session
 def list_extraction_runs_for_artifact(
     artifact_id: str,
     limit: int = Query(default=100, ge=1, le=500),
-    session: Session = Depends(get_session),
-) -> list[ExtractionRunResponse]:
+    session: Session = Depends(get_session),) -> list[ExtractionRunResponse]:
     runs = ListExtractionRunsForArtifact(
         SqlAlchemyExtractionRunRepository(session)
     ).execute(artifact_id, limit=limit)
@@ -788,7 +797,7 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", service="ng-trade-intelligence-api", version="0.1.0")
 
 
-@app.post("/api/v1/export-scenarios", response_model=ExportScenarioResponse, status_code=201, tags=["scenarios"])
+@app.post("/api/v1/export-scenarios", response_model=ExportScenarioResponse, status_code=201, dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["scenarios"])
 def create_export_scenario(payload: ExportScenarioRequest, session: Session = Depends(get_session)) -> ExportScenarioResponse:
     product = SqlAlchemyProductRepository(session).get(payload.product_id)
     hs_code = SqlAlchemyHSCodeRepository(session).get(payload.hs_version_id, payload.hs_code)
@@ -810,7 +819,7 @@ def get_export_scenario(scenario_id: str, session: Session = Depends(get_session
     return ExportScenarioResponse(id=scenario.id, product_id=scenario.product.id, hs_version_id=scenario.hs_code.version_id, hs_code=scenario.hs_code.code, origin_country_code=scenario.origin_country.code, destination_market_code=scenario.destination_market.code, scenario_date=scenario.scenario_date)
 
 
-@app.post("/api/v1/export-scenarios/{scenario_id}/evaluate", response_model=list[EvaluationResponse], tags=["scenarios"])
+@app.post("/api/v1/export-scenarios/{scenario_id}/evaluate", response_model=list[EvaluationResponse], dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["scenarios"])
 def evaluate_export_scenario(scenario_id: str, session: Session = Depends(get_session)) -> list[EvaluationResponse]:
     service = RevisionAwareEvaluationService(
         SqlAlchemyExportScenarioRepository(session),
@@ -846,7 +855,7 @@ def get_export_scenario_results(scenario_id: str, session: Session = Depends(get
     return [EvaluationResponse(scenario_id=x.scenario_id, requirement_id=x.requirement_id, result=x.result.value, rule_set_version=x.rule_set_version, evidence_ids=[e.id for e in x.evidence]) for x in evaluations]
 
 
-@app.post("/api/v1/authority-endpoints/{endpoint_id}/verify", response_model=AuthorityEndpointResponse, tags=["sources"])
+@app.post("/api/v1/authority-endpoints/{endpoint_id}/verify", response_model=AuthorityEndpointResponse, dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["sources"])
 def verify_authority_endpoint(endpoint_id: str, session: Session = Depends(get_session)) -> AuthorityEndpointResponse:
     endpoints = SqlAlchemyAuthorityEndpointRepository(session)
     endpoint = endpoints.get(endpoint_id)
@@ -902,7 +911,7 @@ def list_authority_endpoints(
     ]
 
 
-@app.post("/api/v1/sources", status_code=201, tags=["sources"])
+@app.post("/api/v1/sources", status_code=201, dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["sources"])
 def create_source(payload: SourceRequest, session: Session = Depends(get_session)):
     source = Source(
         str(uuid4()),
@@ -965,7 +974,7 @@ def get_source(source_id: str, session: Session = Depends(get_session)):
     return source
 
 
-@app.post("/api/v1/documents", status_code=201, tags=["sources"])
+@app.post("/api/v1/documents", status_code=201, dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["sources"])
 def create_document(payload: DocumentRequest, session: Session = Depends(get_session)):
     if SqlAlchemySourceRepository(session).get(payload.source_id) is None:
         raise HTTPException(status_code=400, detail="Source not found")
@@ -975,7 +984,7 @@ def create_document(payload: DocumentRequest, session: Session = Depends(get_ses
     return document
 
 
-@app.post("/api/v1/provisions", status_code=201, tags=["sources"])
+@app.post("/api/v1/provisions", status_code=201, dependencies=[Depends(_deny_mutation_until_keycloak_verified)], tags=["sources"])
 def create_provision(payload: ProvisionRequest, session: Session = Depends(get_session)):
     if SqlAlchemyDocumentRepository(session).get(payload.document_id) is None:
         raise HTTPException(status_code=400, detail="Document not found")

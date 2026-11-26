@@ -20,6 +20,10 @@ def test_local_keycloak_realm_defines_api_audience_and_least_privilege_roles():
         "rule-set-validator",
         "rule-set-publisher",
         "rule-set-activator",
+        "scenario-creator",
+        "scenario-evaluator",
+        "authority-endpoint-verifier",
+        "source-catalog-author",
     }
 
     clients = {client["clientId"]: client for client in realm["clients"]}

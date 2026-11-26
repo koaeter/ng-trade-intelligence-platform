@@ -19,6 +19,9 @@ from packages.application.security.authorization import (
 )
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+    # trade-admin is intentionally scoped to rule-set lifecycle operations.
+    # It does not inherit permissions for scenarios, authority endpoints, or
+    # source-catalog mutations.
     "trade-admin": frozenset(
         {
             "rule_set:read",
@@ -33,6 +36,12 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "rule-set-validator": frozenset({"rule_set:read", "rule_set:validate"}),
     "rule-set-publisher": frozenset({"rule_set:read", "rule_set:publish"}),
     "rule-set-activator": frozenset({"rule_set:read", "rule_set:activate"}),
+    "scenario-creator": frozenset({"scenario:create"}),
+    "scenario-evaluator": frozenset({"scenario:evaluate"}),
+    "authority-endpoint-verifier": frozenset({"authority_endpoint:verify"}),
+    "source-catalog-author": frozenset(
+        {"source:create", "document:create", "provision:create"}
+    ),
 }
 
 

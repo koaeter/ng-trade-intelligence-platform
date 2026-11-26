@@ -12,7 +12,7 @@
     "realm": [
       {
         "name": "trade-admin",
-        "description": "Local development administrator; full rule-set permissions"
+        "description": "Rule-set lifecycle administrator; no data-domain mutation permissions"
       },
       {
         "name": "rule-set-reader",
@@ -33,6 +33,22 @@
       {
         "name": "rule-set-activator",
         "description": "Activate published rule sets"
+      },
+      {
+        "name": "scenario-creator",
+        "description": "Create export scenarios"
+      },
+      {
+        "name": "scenario-evaluator",
+        "description": "Run and persist export-scenario evaluations"
+      },
+      {
+        "name": "authority-endpoint-verifier",
+        "description": "Verify authority endpoints"
+      },
+      {
+        "name": "source-catalog-author",
+        "description": "Create source, document, and provision catalog records"
       }
     ]
   },

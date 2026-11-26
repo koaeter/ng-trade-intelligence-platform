@@ -358,7 +358,8 @@ class EvidenceResponse(BaseModel):
 
 def _document_response(document) -> DocumentResponse:
     return DocumentResponse(
-        id=document.id,        source_id=document.source_id,
+        id=document.id,
+        source_id=document.source_id,
         title=document.title,
         document_type=document.document_type,
         publication_date=document.publication_date,
@@ -707,7 +708,8 @@ def get_source_artifact(artifact_id: str, session: Session = Depends(get_session
 def list_extraction_runs_for_artifact(
     artifact_id: str,
     limit: int = Query(default=100, ge=1, le=500),
-    session: Session = Depends(get_session),) -> list[ExtractionRunResponse]:
+    session: Session = Depends(get_session),
+) -> list[ExtractionRunResponse]:
     runs = ListExtractionRunsForArtifact(
         SqlAlchemyExtractionRunRepository(session)
     ).execute(artifact_id, limit=limit)

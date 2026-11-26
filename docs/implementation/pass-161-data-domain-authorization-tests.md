@@ -30,7 +30,7 @@ The new dependency tests do not constitute live Keycloak verification. They exer
 
 ## Verification still required before unlocking routes
 
-- Run the opt-in live Keycloak integration test against the local realm.
+- Run the opt-in live Keycloak integration test against a local or controlled remote test realm.
 - Verify each data-domain role using a real signed access token.
 - Verify `trade-admin` receives no data-domain permission in a live token.
 - Review audit persistence and failure-path behaviour for each mutation.

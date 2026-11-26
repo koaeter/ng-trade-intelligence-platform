@@ -1,7 +1,7 @@
-"""Inventory of legacy mutation routes pending an explicit security policy.
+"""Inventory and fail-closed behavior for legacy API mutation routes.
 
-These assertions intentionally document exposure; they do not imply that the
-routes are safe for production or protected by Keycloak.
+The routes remain registered for compatibility but reject writes until live
+Keycloak authentication and authorization have been verified.
 """
 from fastapi.testclient import TestClient
 
@@ -66,3 +66,5 @@ def test_all_legacy_mutation_routes_fail_closed_with_503():
         response = client.request(method, path, json=payload)
         assert response.status_code == 503, (path, response.text)
         assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
+
+    assert client.get("/health").status_code == 200

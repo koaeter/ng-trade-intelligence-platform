@@ -2,23 +2,35 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from apps.api.main import app
+from apps.api.main import MUTATIONS_DISABLED_DETAIL, app
 
 
-def test_create_export_scenario_validation() -> None:
+def test_create_export_scenario_is_temporarily_disabled() -> None:
     client = TestClient(app)
-    response = client.post("/api/v1/export-scenarios", json={"product_id": "p", "hs_code": "1801"})
-    assert response.status_code == 422
+    response = client.post(
+        "/api/v1/export-scenarios",
+        json={"product_id": "p", "hs_code": "1801"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
 
 
-def test_scenario_date_is_required() -> None:
+def test_scenario_creation_lock_precedes_request_validation() -> None:
     client = TestClient(app)
-    response = client.post("/api/v1/export-scenarios", json={
-        "product_id": "p", "hs_version_id": "HS2022", "hs_code": "1801", "origin_country_code": "NG",
-        "destination_market_code": "DE",
-    })
-    assert response.status_code == 422
+    response = client.post(
+        "/api/v1/export-scenarios",
+        json={
+            "product_id": "p",
+            "hs_version_id": "HS2022",
+            "hs_code": "1801",
+            "origin_country_code": "NG",
+            "destination_market_code": "DE",
+        },
+    )
 
+    assert response.status_code == 503
+    assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
 
 
 def test_evaluation_endpoint_uses_revision_aware_service(monkeypatch) -> None:

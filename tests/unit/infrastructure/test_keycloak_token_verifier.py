@@ -219,3 +219,60 @@ def test_keycloak_verifier_accepts_absent_optional_role_claims(monkeypatch):
 
     assert principal.subject == "user-without-roles"
     assert principal.permissions == frozenset()
+
+@pytest.mark.parametrize(
+    ("role", "expected_permissions"),
+    [
+        ("scenario-creator", {"scenario:create"}),
+        ("scenario-evaluator", {"scenario:evaluate"}),
+        ("authority-endpoint-verifier", {"authority_endpoint:verify"}),
+        (
+            "source-catalog-author",
+            {"source:create", "document:create", "provision:create"},
+        ),
+        (
+            "trade-admin",
+            {
+                "rule_set:read",
+                "rule_set:draft:create",
+                "rule_set:validate",
+                "rule_set:publish",
+                "rule_set:activate",
+            },
+        ),
+    ],
+)
+def test_keycloak_verifier_maps_data_domain_roles_without_admin_inheritance(
+    monkeypatch, role, expected_permissions
+):
+    instance = verifier()
+    instance._jwks = Mock()
+    instance._jwks.get_signing_key_from_jwt.return_value.key = "public-key"
+    monkeypatch.setattr(
+        "infrastructure.security.keycloak.jwt.decode",
+        lambda *args, **kwargs: {
+            "sub": "least-privilege-user",
+            "typ": "Bearer",
+            "realm_access": {"roles": [role]},
+            "resource_access": {},
+        },
+    )
+
+    principal = instance.verify("signed-token")
+
+    assert principal.subject == "least-privilege-user"
+    assert principal.permissions == frozenset(expected_permissions)
+
+
+def test_trade_admin_does_not_receive_data_domain_permissions():
+    from infrastructure.security.keycloak import ROLE_PERMISSIONS
+
+    permissions = ROLE_PERMISSIONS["trade-admin"]
+
+    assert "scenario:create" not in permissions
+    assert "scenario:evaluate" not in permissions
+    assert "authority_endpoint:verify" not in permissions
+    assert "source:create" not in permissions
+    assert "document:create" not in permissions
+    assert "provision:create" not in permissions
+

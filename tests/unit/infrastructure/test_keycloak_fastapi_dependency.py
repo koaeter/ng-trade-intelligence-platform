@@ -29,6 +29,48 @@ def test_fastapi_dependency_maps_invalid_token_to_401(monkeypatch):
     assert exc.value.status_code == 401
 
 
+@pytest.mark.parametrize(
+    "permission",
+    [
+        "scenario:create",
+        "scenario:evaluate",
+        "authority_endpoint:verify",
+        "source:create",
+        "document:create",
+        "provision:create",
+    ],
+)
+def test_data_domain_permission_dependency_returns_403_without_exact_permission(
+    permission,
+):
+    dependency = keycloak_fastapi.require_keycloak_permission(permission)
+    principal = AuthenticatedPrincipal("user-1", frozenset({"rule_set:read"}))
+
+    with pytest.raises(HTTPException) as exc:
+        dependency(principal)
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "Insufficient permission"
+
+
+@pytest.mark.parametrize(
+    "permission",
+    [
+        "scenario:create",
+        "scenario:evaluate",
+        "authority_endpoint:verify",
+        "source:create",
+        "document:create",
+        "provision:create",
+    ],
+)
+def test_data_domain_permission_dependency_accepts_exact_permission(permission):
+    dependency = keycloak_fastapi.require_keycloak_permission(permission)
+    principal = AuthenticatedPrincipal("user-1", frozenset({permission}))
+
+    assert dependency(principal) is principal
+
+
 def test_permission_dependency_returns_403_for_authenticated_user_without_permission():
     dependency = keycloak_fastapi.require_keycloak_permission("rule_set:activate")
     principal = AuthenticatedPrincipal("user-1", frozenset({"rule_set:read"}))

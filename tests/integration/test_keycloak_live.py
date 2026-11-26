@@ -22,7 +22,7 @@ def test_live_keycloak_access_token_is_verified_and_roles_are_mapped() -> None:
         token_url,
         data={
             "grant_type": "password",
-            "client_id": "trade-api-dev-cli",
+            "client_id": os.getenv("KEYCLOAK_TEST_CLIENT_ID", "trade-api-dev-cli"),
             "username": username,
             "password": password,
         },
@@ -40,7 +40,19 @@ def test_live_keycloak_access_token_is_verified_and_roles_are_mapped() -> None:
     principal = verifier.verify(access_token)
 
     assert principal.subject
-    expected_permission = os.getenv(
-        "KEYCLOAK_TEST_EXPECTED_PERMISSION", "rule_set:read"
-    )
-    assert expected_permission in principal.permissions
+    expected_permissions = {
+        item.strip()
+        for item in os.getenv(
+            "KEYCLOAK_TEST_EXPECTED_PERMISSIONS",
+            os.getenv("KEYCLOAK_TEST_EXPECTED_PERMISSION", "rule_set:read"),
+        ).split(",")
+        if item.strip()
+    }
+    forbidden_permissions = {
+        item.strip()
+        for item in os.getenv("KEYCLOAK_TEST_FORBIDDEN_PERMISSIONS", "").split(",")
+        if item.strip()
+    }
+
+    assert expected_permissions <= principal.permissions
+    assert forbidden_permissions.isdisjoint(principal.permissions)

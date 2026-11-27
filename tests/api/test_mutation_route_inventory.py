@@ -103,3 +103,45 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
     assert "header-secret" not in audit_output
 
     assert client.get("/health").status_code == 200
+
+def test_locked_mutations_are_rejected_before_body_parsing_or_validation(caplog):
+    client = TestClient(app)
+    requests = [
+        (
+            "/api/v1/sources",
+            "{malformed-json",
+            {"Content-Type": "application/json"},
+        ),
+        (
+            "/api/v1/documents",
+            "{}",
+            {"Content-Type": "application/json"},
+        ),
+    ]
+
+    with caplog.at_level(
+        logging.WARNING, logger="ng_trade_intelligence.security.audit"
+    ):
+        for path, body, headers in requests:
+            response = client.post(path, content=body, headers=headers)
+            assert response.status_code == 503, (path, response.text)
+            assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
+
+    audit_records = [
+        record
+        for record in caplog.records
+        if record.name == "ng_trade_intelligence.security.audit"
+    ]
+    assert len(audit_records) == len(requests)
+    assert all(
+        json.loads(record.getMessage())["route"] in {
+            "/api/v1/sources",
+            "/api/v1/documents",
+        }
+        for record in audit_records
+    )
+    assert all(
+        json.loads(record.getMessage())["http_status"] == 503
+        for record in audit_records
+    )
+

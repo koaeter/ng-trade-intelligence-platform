@@ -3,6 +3,8 @@ from datetime import date
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
+from starlette.routing import Match
 from infrastructure.security.audit import record_blocked_mutation
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -76,6 +78,37 @@ def _deny_mutation_until_keycloak_verified(request: Request) -> None:
     """Audit and fail closed until live Keycloak verification is complete."""
     record_blocked_mutation(request)
     raise HTTPException(status_code=503, detail=MUTATIONS_DISABLED_DETAIL)
+
+
+LOCKED_MUTATION_ROUTE_KEYS = frozenset(
+    {
+        ("POST", "/api/v1/export-scenarios"),
+        ("POST", "/api/v1/export-scenarios/{scenario_id}/evaluate"),
+        ("POST", "/api/v1/authority-endpoints/{endpoint_id}/verify"),
+        ("POST", "/api/v1/sources"),
+        ("POST", "/api/v1/documents"),
+        ("POST", "/api/v1/provisions"),
+    }
+)
+
+
+@app.middleware("http")
+async def block_locked_mutations_before_body_validation(
+    request: Request, call_next
+):
+    """Reject locked writes before FastAPI parses or validates their bodies."""
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        for route in request.app.router.routes:
+            match, child_scope = route.matches(request.scope)
+            route_key = (request.method, getattr(route, "path", ""))
+            if match is Match.FULL and route_key in LOCKED_MUTATION_ROUTE_KEYS:
+                request.scope.update(child_scope)
+                record_blocked_mutation(request)
+                return JSONResponse(
+                    status_code=503,
+                    content={"detail": MUTATIONS_DISABLED_DETAIL},
+                )
+    return await call_next(request)
 
 
 class HealthResponse(BaseModel):

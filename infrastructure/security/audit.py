@@ -23,7 +23,7 @@ def record_blocked_mutation(request: Request) -> None:
         "outcome": "denied",
         "reason": "keycloak_verification_pending",
         "http_status": 503,
-        "actor": "unauthenticated",
+        "actor": "unverified",
     }
     security_audit_logger.warning(
         json.dumps(event, sort_keys=True, separators=(",", ":")),

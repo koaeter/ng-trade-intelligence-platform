@@ -3,6 +3,7 @@
 The routes remain registered for compatibility but reject writes until live
 Keycloak authentication and authorization have been verified.
 """
+import json
 import logging
 
 from fastapi.testclient import TestClient
@@ -78,9 +79,9 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
         if record.name == "ng_trade_intelligence.security.audit"
     ]
     assert len(audit_records) == len(requests)
-    assert {record.security_event["event"] for record in audit_records} == {
-        "mutation_blocked"
-    }
+    parsed_events = [json.loads(record.getMessage()) for record in audit_records]
+    assert {event["event"] for event in parsed_events} == {"mutation_blocked"}
+    assert all(event["actor"] == "unauthenticated" for event in parsed_events)
     assert {record.security_event["route"] for record in audit_records} == {
         route_path for _, route_path in EXPECTED_MUTATION_ROUTES
     }

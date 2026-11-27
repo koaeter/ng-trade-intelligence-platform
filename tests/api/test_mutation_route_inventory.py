@@ -3,6 +3,8 @@
 The routes remain registered for compatibility but reject writes until live
 Keycloak authentication and authorization have been verified.
 """
+import logging
+
 from fastapi.testclient import TestClient
 
 from apps.api.main import MUTATIONS_DISABLED_DETAIL, app
@@ -29,7 +31,7 @@ def test_api_mutation_route_inventory_is_explicit_and_reviewed():
     assert actual == EXPECTED_MUTATION_ROUTES
 
 
-def test_all_legacy_mutation_routes_fail_closed_with_503():
+def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
     client = TestClient(app)
     requests = [
         ("POST", "/api/v1/export-scenarios", {
@@ -62,9 +64,28 @@ def test_all_legacy_mutation_routes_fail_closed_with_503():
         }),
     ]
 
-    for method, path, payload in requests:
-        response = client.request(method, path, json=payload)
-        assert response.status_code == 503, (path, response.text)
-        assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
+    with caplog.at_level(
+        logging.WARNING, logger="ng_trade_intelligence.security.audit"
+    ):
+        for method, path, payload in requests:
+            response = client.request(method, path, json=payload)
+            assert response.status_code == 503, (path, response.text)
+            assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
+
+    audit_records = [
+        record
+        for record in caplog.records
+        if record.name == "ng_trade_intelligence.security.audit"
+    ]
+    assert len(audit_records) == len(requests)
+    assert {record.security_event["event"] for record in audit_records} == {
+        "mutation_blocked"
+    }
+    assert {record.security_event["route"] for record in audit_records} == {
+        path for _, path, _ in requests
+    }
+    assert all(record.security_event["http_status"] == 503 for record in audit_records)
+    assert all(record.security_event["outcome"] == "denied" for record in audit_records)
+    assert not any("Test provision" in record.getMessage() for record in audit_records)
 
     assert client.get("/health").status_code == 200

@@ -69,7 +69,13 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
         logging.WARNING, logger="ng_trade_intelligence.security.audit"
     ):
         for method, path, payload in requests:
-            response = client.request(method, path, json=payload)
+            response = client.request(
+                method,
+                path,
+                json=payload,
+                params={"access_token": "query-secret"},
+                headers={"Authorization": "Bearer header-secret"},
+            )
             assert response.status_code == 503, (path, response.text)
             assert response.json()["detail"] == MUTATIONS_DISABLED_DETAIL
 
@@ -82,11 +88,18 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
     parsed_events = [json.loads(record.getMessage()) for record in audit_records]
     assert {event["event"] for event in parsed_events} == {"mutation_blocked"}
     assert all(event["actor"] == "unauthenticated" for event in parsed_events)
+    expected_audit_fields = {
+        "event", "method", "route", "outcome", "reason", "http_status", "actor"
+    }
+    assert all(set(event) == expected_audit_fields for event in parsed_events)
     assert {record.security_event["route"] for record in audit_records} == {
         route_path for _, route_path in EXPECTED_MUTATION_ROUTES
     }
     assert all(record.security_event["http_status"] == 503 for record in audit_records)
     assert all(record.security_event["outcome"] == "denied" for record in audit_records)
-    assert not any("Test provision" in record.getMessage() for record in audit_records)
+    audit_output = " ".join(record.getMessage() for record in audit_records)
+    assert "Test provision" not in audit_output
+    assert "query-secret" not in audit_output
+    assert "header-secret" not in audit_output
 
     assert client.get("/health").status_code == 200

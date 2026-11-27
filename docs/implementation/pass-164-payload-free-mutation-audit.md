@@ -2,7 +2,7 @@
 
 ## Change
 
-Every request reaching one of the six temporarily disabled mutation routes now emits a structured warning-level security audit event before the API returns HTTP 503.
+Every request reaching one of the six temporarily disabled mutation routes now emits a warning-level JSON Lines security audit event before the API returns HTTP 503. The JSON object is also attached to the Python log record for structured logging handlers.
 
 The event records only:
 

@@ -82,7 +82,7 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
         "mutation_blocked"
     }
     assert {record.security_event["route"] for record in audit_records} == {
-        path for _, path, _ in requests
+        route_path for _, route_path in EXPECTED_MUTATION_ROUTES
     }
     assert all(record.security_event["http_status"] == 503 for record in audit_records)
     assert all(record.security_event["outcome"] == "denied" for record in audit_records)

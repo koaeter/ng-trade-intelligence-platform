@@ -2,7 +2,8 @@ from urllib.parse import urlparse
 from datetime import date
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from infrastructure.security.audit import record_blocked_mutation
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -71,8 +72,9 @@ MUTATIONS_DISABLED_DETAIL = (
 )
 
 
-def _deny_mutation_until_keycloak_verified() -> None:
-    """Fail closed until live Keycloak authentication and authorization are verified."""
+def _deny_mutation_until_keycloak_verified(request: Request) -> None:
+    """Audit and fail closed until live Keycloak verification is complete."""
+    record_blocked_mutation(request)
     raise HTTPException(status_code=503, detail=MUTATIONS_DISABLED_DETAIL)
 
 

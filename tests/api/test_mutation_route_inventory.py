@@ -92,7 +92,7 @@ def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):
     assert len(audit_records) == len(requests)
     parsed_events = [json.loads(record.getMessage()) for record in audit_records]
     assert {event["event"] for event in parsed_events} == {"mutation_blocked"}
-    assert all(event["actor"] == "unauthenticated" for event in parsed_events)
+    assert all(event["actor"] == "unverified" for event in parsed_events)
     expected_audit_fields = {
         "event", "method", "route", "outcome", "reason", "http_status", "actor"
     }

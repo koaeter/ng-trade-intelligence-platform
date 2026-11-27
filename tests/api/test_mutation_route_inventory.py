@@ -8,7 +8,11 @@ import logging
 
 from fastapi.testclient import TestClient
 
-from apps.api.main import MUTATIONS_DISABLED_DETAIL, app
+from apps.api.main import (
+    LOCKED_MUTATION_ROUTE_KEYS,
+    MUTATIONS_DISABLED_DETAIL,
+    app,
+)
 
 
 EXPECTED_MUTATION_ROUTES = {
@@ -30,6 +34,7 @@ def test_api_mutation_route_inventory_is_explicit_and_reviewed():
     }
 
     assert actual == EXPECTED_MUTATION_ROUTES
+    assert LOCKED_MUTATION_ROUTE_KEYS == EXPECTED_MUTATION_ROUTES
 
 
 def test_all_legacy_mutation_routes_fail_closed_with_503(caplog):

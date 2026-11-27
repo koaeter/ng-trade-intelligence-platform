@@ -12,7 +12,7 @@ The event records only:
 - outcome: `denied`
 - reason: `keycloak_verification_pending`
 - HTTP status: `503`
-- actor classification: `unauthenticated`
+- actor classification: `unverified` (the lock does not authenticate or inspect caller credentials)
 
 The audit helper deliberately excludes request bodies, authorization headers, cookies, query strings, caller-supplied identifiers, and client IP addresses. It does not create a database dependency or alter the route's fail-closed behavior.
 
